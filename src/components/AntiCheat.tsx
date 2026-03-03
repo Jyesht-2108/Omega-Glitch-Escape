@@ -1,13 +1,28 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 
 const AntiCheat = () => {
   const [show, setShow] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/fahh.mp3');
+  }, []);
+
+  const playAlert = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+  }, []);
 
   const handleVisibility = useCallback(() => {
-    if (document.hidden) setShow(true);
-  }, []);
+    if (document.hidden) {
+      setShow(true);
+      playAlert();
+    }
+  }, [playAlert]);
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
     e.preventDefault();
