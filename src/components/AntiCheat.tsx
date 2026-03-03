@@ -33,7 +33,7 @@ const AntiCheat = () => {
     setStrikes(newStrikes);
     playAlert();
 
-    if (newStrikes > 3) {
+    if (newStrikes >= 3) {
       // Game over - OMEGA caught you
       setShow(false);
       setGameOver(true);
@@ -90,7 +90,12 @@ const AntiCheat = () => {
   }, [triggerWarning]);
 
   const handleBlur = useCallback(() => {
-    triggerWarning();
+    // Small delay to avoid false positives from internal iframe interactions
+    setTimeout(() => {
+      if (!document.hasFocus()) {
+        triggerWarning();
+      }
+    }, 100);
   }, [triggerWarning]);
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
@@ -130,6 +135,22 @@ const AntiCheat = () => {
           transition={{ duration: 1.5, ease: 'easeOut' }}
           className="absolute inset-0 bg-destructive"
         />
+        {/* Screen shake keyframes */}
+        <style>{`
+          @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-8px, -6px) rotate(-1deg); }
+            20% { transform: translate(8px, 4px) rotate(1deg); }
+            30% { transform: translate(-6px, 8px) rotate(0deg); }
+            40% { transform: translate(6px, -4px) rotate(1deg); }
+            50% { transform: translate(-4px, 6px) rotate(-1deg); }
+            60% { transform: translate(8px, -8px) rotate(0deg); }
+            70% { transform: translate(-8px, 4px) rotate(-1deg); }
+            80% { transform: translate(4px, -6px) rotate(1deg); }
+            90% { transform: translate(-4px, 8px) rotate(0deg); }
+          }
+          .shake-screen { animation: screen-shake 0.15s infinite; }
+        `}</style>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -156,6 +177,23 @@ const AntiCheat = () => {
         animate={{ opacity: 1 }}
         className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black"
       >
+        {/* Screen shake style for game over */}
+        <style>{`
+          @keyframes screen-shake-intense {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-5px, -3px) rotate(-0.5deg); }
+            20% { transform: translate(5px, 2px) rotate(0.5deg); }
+            30% { transform: translate(-3px, 5px) rotate(0deg); }
+            40% { transform: translate(3px, -2px) rotate(0.5deg); }
+            50% { transform: translate(-2px, 3px) rotate(-0.5deg); }
+            60% { transform: translate(5px, -5px) rotate(0deg); }
+            70% { transform: translate(-5px, 2px) rotate(-0.5deg); }
+            80% { transform: translate(2px, -3px) rotate(0.5deg); }
+            90% { transform: translate(-2px, 5px) rotate(0deg); }
+          }
+          .shake-intense { animation: screen-shake-intense 0.1s infinite; }
+        `}</style>
+        <div className="shake-intense absolute inset-0" />
         {/* Flashing red overlay */}
         <motion.div
           animate={{ opacity: [0, 0.4, 0] }}
@@ -246,6 +284,10 @@ const AntiCheat = () => {
 
           <p className="text-destructive-foreground/60 font-mono text-sm mb-8">
             Strike {strikes} of 3 — {strikes >= 3 ? 'FINAL WARNING' : `${3 - strikes} remaining`}
+          </p>
+
+          <p className="text-destructive-foreground font-mono text-3xl mb-8 tabular-nums">
+            {countdown > 0 ? `${countdown}s` : 'UNLOCKED'}
           </p>
 
           <button
