@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Skull } from 'lucide-react';
+import { playAlarmSiren, playExplosion, playCountdownBeep } from '@/lib/synthAudio';
 
 const AntiCheat = () => {
   const [show, setShow] = useState(false);
@@ -11,15 +12,11 @@ const AntiCheat = () => {
   const [explosionCountdown, setExplosionCountdown] = useState(10);
   const [exploded, setExploded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const alarmRef = useRef<HTMLAudioElement | null>(null);
-  const explosionRef = useRef<HTMLAudioElement | null>(null);
+  const stopAlarmRef = useRef<(() => void) | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     audioRef.current = new Audio('/sounds/fahh.mp3');
-    // Create alarm loop for game over
-    alarmRef.current = new Audio('/sounds/fahh.mp3');
-    if (alarmRef.current) alarmRef.current.loop = true;
   }, []);
 
   const playAlert = useCallback(() => {
@@ -40,10 +37,8 @@ const AntiCheat = () => {
       // Game over - OMEGA caught you
       setShow(false);
       setGameOver(true);
-      if (alarmRef.current) {
-        alarmRef.current.currentTime = 0;
-        alarmRef.current.play().catch(() => {});
-      }
+      // Start synthesized alarm siren
+      stopAlarmRef.current = playAlarmSiren();
     } else {
       setShow(true);
       setCountdown(60);
@@ -73,11 +68,15 @@ const AntiCheat = () => {
         if (prev <= 1) {
           clearInterval(interval);
           setExploded(true);
-          if (alarmRef.current) {
-            alarmRef.current.pause();
+          // Stop alarm siren & play explosion
+          if (stopAlarmRef.current) {
+            stopAlarmRef.current();
+            stopAlarmRef.current = null;
           }
+          playExplosion();
           return 0;
         }
+        playCountdownBeep(prev - 1);
         return prev - 1;
       });
     }, 1000);
