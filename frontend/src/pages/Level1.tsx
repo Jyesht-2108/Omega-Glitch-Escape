@@ -7,59 +7,113 @@ import { Cpu } from 'lucide-react';
 
 const BINARY_STRING = "101101110010";
 
-const LogicGate = ({ type, inputA, inputB, onToggleA, onToggleB }: {
-  type: string; inputA: boolean; inputB: boolean;
-  onToggleA: () => void; onToggleB: () => void;
+const LogicCircuit = ({ inputs, onToggleInput }: {
+  inputs: boolean[];
+  onToggleInput: (index: number) => void;
 }) => {
-  const output = type === 'AND' ? inputA && inputB
-    : type === 'OR' ? inputA || inputB
-    : type === 'XOR' ? inputA !== inputB
-    : false;
+  // Calculate gate outputs
+  const andOutput = inputs[0] && inputs[1];
+  const orOutput = inputs[2] || inputs[3];
+  const xorOutput = inputs[4] !== inputs[5];
+  const finalOutput = [andOutput, orOutput, xorOutput, andOutput && orOutput];
+
+  const green = "hsl(120,100%,50%)";
+  const greenDim = "hsl(120,100%,20%)";
 
   return (
-    <div className="border border-border bg-card p-4 box-glow-green">
-      <div className="text-xs text-muted-foreground mb-2">{type} GATE</div>
-      <svg viewBox="0 0 160 100" className="w-full h-20">
-        {/* Gate body */}
-        <rect x="50" y="20" width="60" height="60" fill="none" stroke="hsl(120,100%,50%)" strokeWidth="1.5" rx="4" />
-        <text x="80" y="55" textAnchor="middle" fill="hsl(120,100%,50%)" fontSize="12" fontFamily="monospace">{type}</text>
-        {/* Input lines */}
-        <line x1="10" y1="35" x2="50" y2="35" stroke="hsl(120,100%,50%)" strokeWidth="1.5" />
-        <line x1="10" y1="65" x2="50" y2="65" stroke="hsl(120,100%,50%)" strokeWidth="1.5" />
-        {/* Output line */}
-        <line x1="110" y1="50" x2="150" y2="50" stroke={output ? "hsl(120,100%,50%)" : "hsl(120,100%,20%)"} strokeWidth="2" />
-        {/* Input indicators */}
-        <circle cx="10" cy="35" r="6" fill={inputA ? "hsl(120,100%,50%)" : "transparent"} stroke="hsl(120,100%,50%)" strokeWidth="1.5" />
-        <circle cx="10" cy="65" r="6" fill={inputB ? "hsl(120,100%,50%)" : "transparent"} stroke="hsl(120,100%,50%)" strokeWidth="1.5" />
-        {/* Output indicator */}
-        <circle cx="150" cy="50" r="6" fill={output ? "hsl(120,100%,50%)" : "transparent"} stroke="hsl(120,100%,50%)" strokeWidth="1.5" />
+    <div className="border border-border bg-card p-6 box-glow-green">
+      <div className="text-xs text-muted-foreground mb-4">HARDWARE LOCK CIRCUIT</div>
+      <svg viewBox="0 0 800 420" className="w-full h-auto">
+        {/* Input nodes on the left */}
+        {inputs.map((active, i) => {
+          const yPos = 60 + i * 60;
+          return (
+            <g key={i}>
+              <circle cx="30" cy={yPos} r="8" fill={active ? green : "transparent"} stroke={green} strokeWidth="2" />
+              <text x="45" y={yPos + 5} fill={green} fontSize="16" fontFamily="monospace">
+                {String.fromCharCode(65 + i)}: {active ? '1' : '0'}
+              </text>
+              <line 
+                x1="38" 
+                y1={yPos} 
+                x2="150" 
+                y2={i < 2 ? 110 : i < 4 ? 210 : 310} 
+                stroke={active ? green : greenDim} 
+                strokeWidth="2" 
+              />
+            </g>
+          );
+        })}
+
+        {/* AND Gate */}
+        <rect x="150" y="80" width="80" height="60" fill="none" stroke={green} strokeWidth="2" rx="4" />
+        <text x="190" y="115" textAnchor="middle" fill={green} fontSize="16" fontFamily="monospace" fontWeight="bold">AND</text>
+        <line x1="230" y1="110" x2="300" y2="110" stroke={andOutput ? green : greenDim} strokeWidth="2" />
+        <circle cx="300" cy="110" r="6" fill={andOutput ? green : "transparent"} stroke={green} strokeWidth="2" />
+
+        {/* OR Gate */}
+        <rect x="150" y="180" width="80" height="60" fill="none" stroke={green} strokeWidth="2" rx="4" />
+        <text x="190" y="215" textAnchor="middle" fill={green} fontSize="16" fontFamily="monospace" fontWeight="bold">OR</text>
+        <line x1="230" y1="210" x2="300" y2="210" stroke={orOutput ? green : greenDim} strokeWidth="2" />
+        <circle cx="300" cy="210" r="6" fill={orOutput ? green : "transparent"} stroke={green} strokeWidth="2" />
+
+        {/* XOR Gate */}
+        <rect x="150" y="280" width="80" height="60" fill="none" stroke={green} strokeWidth="2" rx="4" />
+        <text x="190" y="315" textAnchor="middle" fill={green} fontSize="16" fontFamily="monospace" fontWeight="bold">XOR</text>
+        <line x1="230" y1="310" x2="300" y2="310" stroke={xorOutput ? green : greenDim} strokeWidth="2" />
+        <circle cx="300" cy="310" r="6" fill={xorOutput ? green : "transparent"} stroke={green} strokeWidth="2" />
+
+        {/* Final AND gate combining first two outputs */}
+        <line x1="300" y1="110" x2="400" y2="140" stroke={andOutput ? green : greenDim} strokeWidth="2" />
+        <line x1="300" y1="210" x2="400" y2="180" stroke={orOutput ? green : greenDim} strokeWidth="2" />
+        <rect x="400" y="150" width="80" height="60" fill="none" stroke={green} strokeWidth="2" rx="4" />
+        <text x="440" y="185" textAnchor="middle" fill={green} fontSize="16" fontFamily="monospace" fontWeight="bold">AND</text>
+        <line x1="480" y1="180" x2="550" y2="180" stroke={finalOutput[3] ? green : greenDim} strokeWidth="2" />
+        <circle cx="550" cy="180" r="6" fill={finalOutput[3] ? green : "transparent"} stroke={green} strokeWidth="2" />
+
+        {/* Output indicators on the right */}
+        <text x="600" y="115" fill={green} fontSize="16" fontFamily="monospace">OUT[0]: {andOutput ? '1' : '0'}</text>
+        <text x="600" y="185" fill={green} fontSize="16" fontFamily="monospace">OUT[1]: {orOutput ? '1' : '0'}</text>
+        <text x="600" y="255" fill={green} fontSize="16" fontFamily="monospace">OUT[2]: {xorOutput ? '1' : '0'}</text>
+        <text x="600" y="315" fill={green} fontSize="16" fontFamily="monospace">OUT[3]: {finalOutput[3] ? '1' : '0'}</text>
+
+        {/* Lines to outputs */}
+        <line x1="300" y1="110" x2="580" y2="110" stroke={andOutput ? green : greenDim} strokeWidth="2" />
+        <line x1="550" y1="180" x2="580" y2="180" stroke={finalOutput[3] ? green : greenDim} strokeWidth="2" />
+        <line x1="300" y1="310" x2="580" y2="250" stroke={xorOutput ? green : greenDim} strokeWidth="2" />
       </svg>
-      <div className="flex gap-2 mt-2">
-        <button onClick={onToggleA} className={`flex-1 text-xs py-1 border font-mono transition-colors ${inputA ? 'border-secondary bg-secondary/20 text-secondary' : 'border-border text-muted-foreground'}`}>
-          A: {inputA ? '1' : '0'}
-        </button>
-        <button onClick={onToggleB} className={`flex-1 text-xs py-1 border font-mono transition-colors ${inputB ? 'border-secondary bg-secondary/20 text-secondary' : 'border-border text-muted-foreground'}`}>
-          B: {inputB ? '1' : '0'}
-        </button>
+
+      {/* Input controls */}
+      <div className="grid grid-cols-6 gap-2 mt-6">
+        {inputs.map((active, i) => (
+          <button
+            key={i}
+            onClick={() => onToggleInput(i)}
+            className={`text-sm py-2 border font-mono transition-colors ${
+              active ? 'border-secondary bg-secondary/20 text-secondary' : 'border-border text-muted-foreground'
+            }`}
+          >
+            {String.fromCharCode(65 + i)}: {active ? '1' : '0'}
+          </button>
+        ))}
       </div>
-      <div className="text-center text-xs mt-2 text-secondary text-glow-green">OUT: {output ? '1' : '0'}</div>
     </div>
   );
 };
 
 const Level1 = () => {
   const [answer, setAnswer] = useState('');
-  const [gates, setGates] = useState([
-    { type: 'AND', a: false, b: false },
-    { type: 'OR', a: false, b: false },
-    { type: 'XOR', a: false, b: false },
-  ]);
+  const [inputs, setInputs] = useState([false, false, false, false, false, false]);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [showIntro, setShowIntro] = useState(true);
   const { submitAnswer, addScore, setCurrentLevel } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => { setCurrentLevel(1); }, [setCurrentLevel]);
+
+  const handleToggleInput = (index: number) => {
+    setInputs(prev => prev.map((val, i) => i === index ? !val : val));
+  };
 
   const handleSubmit = () => {
     if (submitAnswer(1, answer)) {
@@ -77,7 +131,7 @@ const Level1 = () => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="min-h-screen pt-20 pb-8 px-4 bg-background"
+      className="min-h-screen pt-28 pb-8 px-4 bg-background overflow-y-auto"
     >
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-2 mb-4">
@@ -92,6 +146,12 @@ const Level1 = () => {
               speed={20}
               onComplete={() => setTimeout(() => setShowIntro(false), 2000)}
             />
+          </div>
+        )}
+
+        {!showIntro && (
+          <div className="mb-6 text-sm text-secondary/80">
+            {'>> SYSTEM BOOT INTERRUPTED. Decode the scrambled binary using the logic gate array. Provide the 4-bit output key to continue...'}
           </div>
         )}
 
@@ -113,18 +173,9 @@ const Level1 = () => {
           </div>
         </div>
 
-        {/* Logic Gates */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {gates.map((gate, i) => (
-            <LogicGate
-              key={i}
-              type={gate.type}
-              inputA={gate.a}
-              inputB={gate.b}
-              onToggleA={() => setGates(prev => prev.map((g, j) => j === i ? { ...g, a: !g.a } : g))}
-              onToggleB={() => setGates(prev => prev.map((g, j) => j === i ? { ...g, b: !g.b } : g))}
-            />
-          ))}
+        {/* Logic Circuit */}
+        <div className="mb-6">
+          <LogicCircuit inputs={inputs} onToggleInput={handleToggleInput} />
         </div>
 
         {/* Answer Input */}
