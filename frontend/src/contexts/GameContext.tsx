@@ -45,7 +45,7 @@ const MOCK_HINTS: Record<number, string> = {
 };
 
 const MOCK_ANSWERS: Record<number, string> = {
-  1: "1010",
+  1: "SYS",
   2: "CORRUPTED",
   3: "1.47",
   4: "SHUTDOWN",
@@ -54,18 +54,44 @@ const MOCK_ANSWERS: Record<number, string> = {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<GameState>({
-    teamName: '',
-    isLoggedIn: false,
-    currentLevel: 1,
-    score: 0,
-    timerSeconds: 3 * 60 * 60,
-    isTimerRunning: false,
-    hints: [],
-    leaderboard: MOCK_LEADERBOARD,
+  const [state, setState] = useState<GameState>(() => {
+    // Load state from localStorage on initialization
+    const savedState = localStorage.getItem('gameState');
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        return { ...parsed, leaderboard: MOCK_LEADERBOARD };
+      } catch {
+        return {
+          teamName: '',
+          isLoggedIn: false,
+          currentLevel: 1,
+          score: 0,
+          timerSeconds: 3 * 60 * 60,
+          isTimerRunning: false,
+          hints: [],
+          leaderboard: MOCK_LEADERBOARD,
+        };
+      }
+    }
+    return {
+      teamName: '',
+      isLoggedIn: false,
+      currentLevel: 1,
+      score: 0,
+      timerSeconds: 3 * 60 * 60,
+      isTimerRunning: false,
+      hints: [],
+      leaderboard: MOCK_LEADERBOARD,
+    };
   });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('gameState', JSON.stringify(state));
+  }, [state]);
 
   useEffect(() => {
     if (state.isTimerRunning && state.timerSeconds > 0) {
