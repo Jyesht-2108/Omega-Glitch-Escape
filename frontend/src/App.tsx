@@ -27,7 +27,7 @@ const AppRoutes = () => {
   return (
     <>
       {isLoggedIn && <HUD />}
-      {/* <AntiCheat /> */}
+      <AntiCheat />
       <CRTOverlay />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>

@@ -34,7 +34,7 @@ const VigenereGrid = () => (
 
 const GlitchedFace = ({ onClick }: { onClick: () => void }) => (
   <motion.div
-    className="relative w-64 h-64 mx-auto mb-6 cursor-pointer group"
+    className="relative w-80 h-64 mx-auto mb-6 cursor-pointer group"
     animate={{
       x: [0, -3, 5, -2, 0],
       y: [0, 2, -3, 1, 0],
@@ -51,31 +51,35 @@ const GlitchedFace = ({ onClick }: { onClick: () => void }) => (
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
-    <div className="w-full h-full rounded-full border-4 border-destructive bg-destructive/10 flex items-center justify-center box-glow-red relative overflow-hidden">
-      <Skull className="w-32 h-32 text-destructive animate-glitch z-10" />
+    <div className="w-full h-full border-4 border-destructive bg-destructive/10 flex items-center justify-center box-glow-red relative overflow-hidden rounded-lg">
+      {/* Actual OMEGA Image */}
+      <img 
+        src="/images/omega-face.jpg" 
+        alt="OMEGA AI Face"
+        className="w-full h-full object-cover rounded-lg"
+        style={{
+          filter: 'contrast(1.2) brightness(0.9) saturate(1.1)',
+        }}
+      />
       
-      {/* Hidden OMEGA text - visible when inspecting or adjusting contrast */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-6xl font-bold text-destructive/5 group-hover:text-destructive/20 transition-colors duration-1000 select-none">
-          OMEGA
-        </span>
-      </div>
+      {/* Glitch overlay effects */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-destructive/20 to-transparent opacity-30 animate-pulse" />
     </div>
     
     {/* Glitch artifacts */}
-    <div className="absolute inset-0 rounded-full opacity-30 pointer-events-none" style={{
+    <div className="absolute inset-0 rounded-lg opacity-30 pointer-events-none" style={{
       background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(345,100%,50%,0.3) 2px, hsl(345,100%,50%,0.3) 4px)',
     }} />
     
     {/* Scan lines */}
-    <div className="absolute inset-0 rounded-full opacity-20 pointer-events-none" style={{
+    <div className="absolute inset-0 rounded-lg opacity-20 pointer-events-none" style={{
       background: 'repeating-linear-gradient(90deg, transparent, transparent 1px, hsl(345,100%,50%,0.2) 1px, hsl(345,100%,50%,0.2) 2px)',
     }} />
     
     {/* Inspection hint */}
     <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
       <FileImage className="w-4 h-4 mx-auto mb-1" />
-      Click to inspect image
+      Click to examine closely
     </div>
   </motion.div>
 );
@@ -342,39 +346,47 @@ const Level4 = () => {
         </div>
       </motion.div>
 
-      {/* Image Inspector Modal */}
+      {/* Image Viewer Modal */}
       <AnimatePresence>
         {showImageInspector && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/90 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
             onClick={() => setShowImageInspector(false)}
           >
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="bg-card border border-border p-6 max-w-md box-glow-cyan"
+              className="relative max-w-4xl max-h-[90vh] p-4"
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-primary text-lg font-bold mb-3">IMAGE INSPECTOR</h3>
-              <div className="text-sm text-muted-foreground mb-4 space-y-2">
-                <div>File: omega_face.corrupted</div>
-                <div>Size: 512x512 pixels</div>
-                <div>Format: Glitched bitmap</div>
-                <div className="border-t border-border pt-2">
-                  <div className="text-accent">Hidden metadata detected:</div>
-                  <div className="font-mono text-primary font-bold text-lg">OMEGA</div>
-                </div>
-              </div>
+              {/* Large static image */}
+              <img 
+                src="/images/omega-face.jpg" 
+                alt="OMEGA AI Face - Enlarged View"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg border-2 border-primary"
+                style={{
+                  filter: 'contrast(1.3) brightness(1.1) saturate(1.2)',
+                }}
+              />
+              
+              {/* Close button */}
               <button 
                 onClick={() => setShowImageInspector(false)} 
-                className="w-full px-4 py-2 bg-primary text-primary-foreground font-mono text-sm hover:opacity-80 transition-opacity"
+                className="absolute top-2 right-2 px-4 py-2 bg-destructive text-destructive-foreground font-mono text-sm hover:opacity-80 transition-opacity rounded"
               >
-                CLOSE INSPECTOR
+                ✕ CLOSE
               </button>
+              
+              {/* Hint text */}
+              <div className="absolute bottom-2 left-2 right-2 text-center">
+                <div className="bg-black/70 text-primary text-sm font-mono px-3 py-2 rounded">
+                  Examine the image carefully for hidden text or patterns...
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

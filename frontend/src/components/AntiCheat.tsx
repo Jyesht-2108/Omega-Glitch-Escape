@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Skull } from 'lucide-react';
 import { playAlarmSiren, playExplosion, playCountdownBeep } from '@/lib/synthAudio';
+import { useGame } from '@/contexts/GameContext';
 
 const AntiCheat = () => {
+  const { isLoggedIn, currentLevel } = useGame();
   const [show, setShow] = useState(false);
   const [strikes, setStrikes] = useState(0);
   const [countdown, setCountdown] = useState(60);
@@ -11,18 +13,78 @@ const AntiCheat = () => {
   const [gameOver, setGameOver] = useState(false);
   const [explosionCountdown, setExplosionCountdown] = useState(10);
   const [exploded, setExploded] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopAlarmRef = useRef<(() => void) | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Create audio element
     audioRef.current = new Audio('/sounds/fahh.mp3');
-  }, []);
+    audioRef.current.volume = 0.7;
+    audioRef.current.preload = 'auto'; // Preload when user is logged in and playing
+    
+    // If user is already logged in and playing, prepare audio immediately
+    if (isLoggedIn && currentLevel >= 1) {
+      audioRef.current.load();
+      setAudioReady(true);
+    }
+  }, [isLoggedIn, currentLevel]);
+
+  useEffect(() => {
+    // Unlock audio context on first user interaction when logged in
+    if (!isLoggedIn || currentLevel < 1) return;
+
+    const unlockAudio = () => {
+      if (audioRef.current && !audioReady) {
+        // Play a silent sound to unlock audio context
+        const originalVolume = audioRef.current.volume;
+        audioRef.current.volume = 0;
+        audioRef.current.play().then(() => {
+          if (audioRef.current) {
+            audioRef.current.volume = originalVolume;
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+            setAudioReady(true);
+            console.log('Audio context unlocked');
+          }
+        }).catch(() => {
+          // If silent play fails, just mark as ready and hope for the best
+          setAudioReady(true);
+        });
+      }
+    };
+
+    const events = ['click', 'keydown', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, unlockAudio, { once: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, unlockAudio);
+      });
+    };
+  }, [isLoggedIn, currentLevel, audioReady]);
 
   const playAlert = useCallback(() => {
     if (audioRef.current) {
+      // Always try to play, even if not marked as ready
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+      
+      const playPromise = audioRef.current.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          // If it fails, try loading and playing again
+          console.log('Audio play failed, attempting reload');
+          audioRef.current?.load();
+          setTimeout(() => {
+            audioRef.current?.play().catch(() => {
+              console.log('Audio fallback also failed');
+            });
+          }, 100);
+        });
+      }
     }
   }, []);
 
@@ -31,6 +93,8 @@ const AntiCheat = () => {
 
     const newStrikes = strikes + 1;
     setStrikes(newStrikes);
+    
+    // Play sound IMMEDIATELY when warning is triggered
     playAlert();
 
     if (newStrikes >= 3) {
@@ -44,12 +108,21 @@ const AntiCheat = () => {
       setCountdown(60);
       setCanDismiss(false);
 
-      // Start countdown
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      // Clear any existing countdown
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+
+      // Start countdown with more robust logic
       countdownIntervalRef.current = setInterval(() => {
         setCountdown(prev => {
+          console.log('Countdown tick:', prev); // Debug log
           if (prev <= 1) {
-            if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
             setCanDismiss(true);
             return 0;
           }
@@ -84,19 +157,20 @@ const AntiCheat = () => {
   }, [gameOver, exploded]);
 
   const handleVisibility = useCallback(() => {
+    // Only trigger if user is logged in and playing the game
+    if (!isLoggedIn || currentLevel < 1) return;
+    
+    // Only trigger if the page is actually hidden (tab switch)
     if (document.hidden) {
       triggerWarning();
     }
-  }, [triggerWarning]);
+  }, [triggerWarning, isLoggedIn, currentLevel]);
 
   const handleBlur = useCallback(() => {
-    // Small delay to avoid false positives from internal iframe interactions
-    setTimeout(() => {
-      if (!document.hasFocus()) {
-        triggerWarning();
-      }
-    }, 100);
-  }, [triggerWarning]);
+    // Don't trigger on blur events at all - they're too unreliable
+    // Only rely on visibilitychange for tab switching detection
+    return;
+  }, []);
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
     e.preventDefault();
@@ -104,21 +178,69 @@ const AntiCheat = () => {
   }, [triggerWarning]);
 
   useEffect(() => {
+    // Only listen for visibility changes (tab switching)
+    // Only activate when user is logged in and playing
+    if (!isLoggedIn || currentLevel < 1) return;
+    
     document.addEventListener('visibilitychange', handleVisibility);
-    document.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('blur', handleBlur);
+    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('blur', handleBlur);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [handleVisibility, handleContextMenu, handleBlur]);
+  }, [handleVisibility, isLoggedIn, currentLevel]);
+
+  useEffect(() => {
+    // Cleanup function to clear all intervals when component unmounts
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Debug effect to monitor countdown
+  useEffect(() => {
+    if (show && countdown === 0 && !canDismiss) {
+      console.log('Countdown reached 0, enabling dismiss');
+      setCanDismiss(true);
+    }
+  }, [show, countdown, canDismiss]);
+
+  // Ensure countdown starts when warning is shown
+  useEffect(() => {
+    if (show && countdown === 60 && !canDismiss && !countdownIntervalRef.current) {
+      console.log('Starting countdown timer');
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown(prev => {
+          console.log('Countdown tick:', prev);
+          if (prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
+            setCanDismiss(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [show, countdown, canDismiss]);
 
   const dismiss = () => {
     if (!canDismiss) return;
+    
+    // Clear countdown interval
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
+    // Reset states
     setShow(false);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    setCountdown(60);
+    setCanDismiss(false);
   };
 
   // Exploded = total destruction screen
