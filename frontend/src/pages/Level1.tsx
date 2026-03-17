@@ -159,10 +159,14 @@ const Level1 = () => {
   const [gateConfig, setGateConfig] = useState<GateConfig>('A');
   const [collectedOutputs, setCollectedOutputs] = useState<{ [key in GateConfig]?: string }>({});
   const [decimalInputs, setDecimalInputs] = useState<{ [key in GateConfig]?: string }>({});
-  const { submitAnswer, addScore, setCurrentLevel } = useGame();
+  const { submitAnswer, addScore, setCurrentLevel, startTimer } = useGame();
   const navigate = useNavigate();
 
-  useEffect(() => { setCurrentLevel(1); }, [setCurrentLevel]);
+  useEffect(() => { 
+    setCurrentLevel(1);
+    // Only start timer if it's not already running
+    startTimer();
+  }, [setCurrentLevel, startTimer]);
 
   const handleToggleInput = (index: number) => {
     setInputs(prev => prev.map((val, i) => i === index ? !val : val));

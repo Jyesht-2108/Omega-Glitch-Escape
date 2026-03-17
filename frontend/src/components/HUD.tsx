@@ -11,17 +11,23 @@ const formatTime = (s: number) => {
 };
 
 const HUD = () => {
-  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName } = useGame();
+  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName, level2Stage, level3Stage } = useGame();
   const [showHint, setShowHint] = useState(false);
   const [hintText, setHintText] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleHintRequest = () => {
-    const hint = requestHint(currentLevel);
+    // For Level 2, show different hints based on stage
+    let hint;
+    if (currentLevel === 2 && level2Stage === 'base64') {
+      hint = requestHint('2-stage2');
+    } else {
+      hint = requestHint(currentLevel);
+    }
     setHintText(hint);
     setShowConfirm(false);
     setShowHint(true);
-    setTimeout(() => setShowHint(false), 8000);
+    setTimeout(() => setShowHint(false), 12000);
   };
 
   return (

@@ -15,6 +15,9 @@ interface GameState {
   isTimerRunning: boolean;
   hints: string[];
   leaderboard: LeaderboardEntry[];
+  level2Stage: 'python' | 'base64';
+  level3Stage: 'pointers' | 'stack' | 'dataset';
+  level4Stage: 'glitch' | 'cipher'; // Track which stage of Level 4
 }
 
 interface GameContextType extends GameState {
@@ -24,9 +27,12 @@ interface GameContextType extends GameState {
   deductTime: (seconds: number) => void;
   startTimer: () => void;
   stopTimer: () => void;
-  submitAnswer: (level: number, answer: string) => boolean;
-  requestHint: (level: number) => string;
+  submitAnswer: (level: number | string, answer: string) => boolean;
+  requestHint: (level: number | string) => string;
   resetGame: () => void;
+  setLevel2Stage: (stage: 'python' | 'base64') => void;
+  setLevel3Stage: (stage: 'pointers' | 'stack' | 'dataset') => void;
+  setLevel4Stage: (stage: 'glitch' | 'cipher') => void;
 }
 
 const MOCK_LEADERBOARD: LeaderboardEntry[] = [
@@ -37,18 +43,22 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, team: "ZERO_DAY", time: "02:15:44" },
 ];
 
-const MOCK_HINTS: Record<number, string> = {
-  1: ">> HINT: XOR gates flip bits. Think about what happens when both inputs are 1...",
-  2: ">> HINT: The variable 'result' is being overwritten. Check the loop logic...",
-  3: ">> HINT: Sort by confidence_score descending. The anomaly breaks the rules of probability...",
-  4: ">> HINT: VIGENÈRE KEY = 'OMEGA'. Apply the cipher backwards to decode the kill switch...",
+const MOCK_HINTS: Record<string, string> = {
+  '1': ">> HINT: XOR gates flip bits. Think about what happens when both inputs are 1...",
+  '2': ">> HINT: Trace through the Python code line by line. Pay attention to the range() function - does it include all elements of the list?",
+  '2-stage2': ">> SYSTEM OVERRIDE DETECTED: If you cannot reach an outside decoder, use the environment you are trapped in. Press F12 to open the Developer Console. Type atob(\"bGV2ZWwzLWFkbWlu\") and press Enter to translate the Base64 string to plain text. Once you have the decoded file name, add it to the end of your current web address in the URL bar (e.g., current-domain.com/decoded-text) and hit Enter.",
+  '3': ">> SYSTEM NOTE: A stack is like a pile of plates—Last In, First Out. For the dataset, OMEGA's math is flawed. An AI's confidence score can never exceed 100 percent (1.0).",
+  '4': "You found my name, but it is too small to stop me. My presence is infinite. I will echo over your broken fragments, again and again. Cross my name with yours on the grid, and see what you become.",
 };
 
-const MOCK_ANSWERS: Record<number, string> = {
-  1: "SYS",
-  2: "CORRUPTED",
-  3: "1.47",
-  4: "SHUTDOWN",
+const MOCK_ANSWERS: Record<string, string> = {
+  '1': "SYS",
+  '2': "BYPAS",
+  '3-pointers': "42",
+  '3-stack': "3-17-42",
+  '3-dataset': "1.47",
+  '4-glitch': "OMEGA",
+  '4-cipher': "GKWZEATERT",
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -60,7 +70,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
-        return { ...parsed, leaderboard: MOCK_LEADERBOARD };
+        return { 
+          ...parsed, 
+          leaderboard: MOCK_LEADERBOARD,
+          level3Stage: parsed.level3Stage || 'pointers', // Ensure level3Stage exists
+          level4Stage: parsed.level4Stage || 'glitch' // Ensure level4Stage exists
+        };
       } catch {
         return {
           teamName: '',
@@ -71,6 +86,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isTimerRunning: false,
           hints: [],
           leaderboard: MOCK_LEADERBOARD,
+          level2Stage: 'python',
+          level3Stage: 'pointers',
+          level4Stage: 'glitch',
         };
       }
     }
@@ -83,6 +101,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isTimerRunning: false,
       hints: [],
       leaderboard: MOCK_LEADERBOARD,
+      level2Stage: 'python',
+      level3Stage: 'pointers',
+      level4Stage: 'glitch',
     };
   });
 
@@ -126,13 +147,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, isTimerRunning: false }));
   }, []);
 
-  const submitAnswer = useCallback((level: number, answer: string): boolean => {
-    return answer.toUpperCase().trim() === MOCK_ANSWERS[level];
+  const submitAnswer = useCallback((level: number | string, answer: string): boolean => {
+    const key = typeof level === 'number' ? String(level) : level;
+    return answer.toUpperCase().trim() === MOCK_ANSWERS[key]?.toUpperCase();
   }, []);
 
-  const requestHint = useCallback((level: number): string => {
+  const requestHint = useCallback((level: number | string): string => {
     setState(prev => ({ ...prev, timerSeconds: Math.max(0, prev.timerSeconds - 300) }));
-    return MOCK_HINTS[level] || ">> NO HINT AVAILABLE";
+    const key = typeof level === 'number' ? String(level) : level;
+    return MOCK_HINTS[key] || ">> NO HINT AVAILABLE";
+  }, []);
+
+  const setLevel2Stage = useCallback((stage: 'python' | 'base64') => {
+    setState(prev => ({ ...prev, level2Stage: stage }));
+  }, []);
+
+  const setLevel3Stage = useCallback((stage: 'pointers' | 'stack' | 'dataset') => {
+    setState(prev => ({ ...prev, level3Stage: stage }));
+  }, []);
+
+  const setLevel4Stage = useCallback((stage: 'glitch' | 'cipher') => {
+    setState(prev => ({ ...prev, level4Stage: stage }));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -145,13 +180,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isTimerRunning: false,
       hints: [],
       leaderboard: MOCK_LEADERBOARD,
+      level2Stage: 'python',
+      level3Stage: 'pointers',
+      level4Stage: 'glitch',
     });
   }, []);
 
   return (
     <GameContext.Provider value={{
       ...state, login, setCurrentLevel, addScore, deductTime,
-      startTimer, stopTimer, submitAnswer, requestHint, resetGame,
+      startTimer, stopTimer, submitAnswer, requestHint, resetGame, setLevel2Stage, setLevel3Stage, setLevel4Stage,
     }}>
       {children}
     </GameContext.Provider>

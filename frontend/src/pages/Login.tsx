@@ -9,14 +9,13 @@ import { Terminal, Lock } from 'lucide-react';
 const Login = () => {
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
-  const { login, startTimer } = useGame();
+  const { login } = useGame();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (teamName.trim() && password.trim()) {
       login(teamName, password);
-      startTimer();
       navigate('/level/1');
     }
   };

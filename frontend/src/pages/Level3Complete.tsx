@@ -2,9 +2,9 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import GlitchText from '@/components/GlitchText';
 import Typewriter from '@/components/Typewriter';
-import { ShieldAlert, ArrowRight } from 'lucide-react';
+import { Database, ArrowRight } from 'lucide-react';
 
-const Level3Admin = () => {
+const Level3Complete = () => {
   const navigate = useNavigate();
 
   return (
@@ -13,25 +13,25 @@ const Level3Admin = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen flex items-center justify-center bg-background p-4"
     >
-      <div className="max-w-lg text-center border border-destructive bg-card p-8 box-glow-red">
-        <ShieldAlert className="w-16 h-16 text-destructive mx-auto mb-4" />
+      <div className="max-w-lg text-center border border-secondary bg-card p-8 box-glow-green">
+        <Database className="w-16 h-16 text-secondary mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-4">
-          <GlitchText text="ADMIN PANEL ACCESSED" className="text-destructive text-glow-red" />
+          <GlitchText text="DATA MAZE COMPLETED" className="text-secondary text-glow-green" />
         </h1>
         <div className="text-sm text-muted-foreground mb-6">
-          <Typewriter text=">> CONGRATULATIONS. You decoded the Base64 string and found the hidden route. Override Fragment Beta acquired: TEM" speed={25} />
+          <Typewriter text=">> ANOMALY IDENTIFIED. OMEGA's corrupted dataset breached. Override Fragment Gamma acquired: HALT" speed={25} />
         </div>
         <div className="text-xs text-muted-foreground animate-flicker mb-6">
-          ▸ THIS ACCESS HAS BEEN LOGGED ◂
+          ▸ CORE SYSTEMS ACCESSIBLE ◂
         </div>
         
         <motion.button
-          onClick={() => navigate('/level/3')}
+          onClick={() => navigate('/level/4')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="px-6 py-3 bg-secondary text-secondary-foreground font-mono font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+          className="px-6 py-3 bg-destructive text-destructive-foreground font-mono font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
         >
-          PROCEED TO LEVEL 3
+          ACCESS CORE TERMINAL
           <ArrowRight className="w-4 h-4" />
         </motion.button>
       </div>
@@ -39,4 +39,4 @@ const Level3Admin = () => {
   );
 };
 
-export default Level3Admin;
+export default Level3Complete;
