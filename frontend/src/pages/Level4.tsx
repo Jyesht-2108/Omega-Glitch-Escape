@@ -9,25 +9,30 @@ import { Skull, AlertTriangle, Eye, Zap, FileImage } from 'lucide-react';
 const VIGENERE_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const VigenereGrid = () => (
-  <div className="border border-destructive bg-card p-3 box-glow-red overflow-auto">
-    <h3 className="text-xs text-muted-foreground mb-2">OMEGA'S DECRYPTION MATRIX</h3>
-    <div className="text-[8px] leading-3 font-mono">
+  <div className="border border-destructive bg-card p-4 box-glow-red overflow-auto">
+    <h3 className="text-sm text-muted-foreground mb-3 font-bold">OMEGA'S DECRYPTION MATRIX</h3>
+    <div className="text-xs leading-4 font-mono">
       <div className="flex">
-        <span className="w-4 text-destructive font-bold"> </span>
+        <span className="w-6 text-destructive font-bold text-center"> </span>
         {VIGENERE_ALPHA.split('').map(c => (
-          <span key={c} className="w-4 text-center text-primary font-bold">{c}</span>
+          <span key={c} className="w-6 text-center text-primary font-bold">{c}</span>
         ))}
       </div>
       {VIGENERE_ALPHA.split('').map((row, ri) => (
         <div key={row} className="flex">
-          <span className="w-4 text-destructive font-bold">{row}</span>
+          <span className="w-6 text-destructive font-bold text-center">{row}</span>
           {VIGENERE_ALPHA.split('').map((_, ci) => (
-            <span key={ci} className="w-4 text-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-crosshair">
+            <span key={ci} className="w-6 text-center text-muted-foreground hover:text-primary hover:bg-primary/20 transition-colors cursor-crosshair py-0.5">
               {VIGENERE_ALPHA[(ri + ci) % 26]}
             </span>
           ))}
         </div>
       ))}
+    </div>
+    <div className="text-xs text-muted-foreground mt-3 space-y-1">
+      <div>• Find row for plaintext letter</div>
+      <div>• Find column for key letter</div>
+      <div>• Intersection = encrypted letter</div>
     </div>
   </div>
 );
@@ -117,6 +122,10 @@ const CountdownTimer = () => {
 const Level4 = () => {
   const [glitchAnswer, setGlitchAnswer] = useState('');
   const [cipherAnswer, setCipherAnswer] = useState('');
+  const [fragmentAlpha, setFragmentAlpha] = useState('');
+  const [fragmentBeta, setFragmentBeta] = useState('');
+  const [fragmentGamma, setFragmentGamma] = useState('');
+  const [keyword, setKeyword] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [victory, setVictory] = useState(false);
   const [showImageInspector, setShowImageInspector] = useState(false);
@@ -269,26 +278,63 @@ const Level4 = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  {/* Override Fragments */}
+                  {/* Input for Override Fragments */}
                   <div className="border border-secondary bg-secondary/10 p-4 box-glow-green">
-                    <h4 className="text-sm font-bold text-secondary mb-3">OVERRIDE FRAGMENTS COLLECTED:</h4>
-                    <div className="space-y-2 font-mono">
+                    <h4 className="text-sm font-bold text-secondary mb-3">ENTER OVERRIDE FRAGMENTS:</h4>
+                    <div className="space-y-3 font-mono">
                       <div className="flex items-center gap-2">
-                        <span className="text-primary">Fragment Alpha (Level 1):</span>
-                        <span className="text-secondary font-bold">SYS</span>
+                        <span className="text-primary w-24">Fragment Alpha:</span>
+                        <input
+                          type="text"
+                          value={fragmentAlpha}
+                          onChange={e => setFragmentAlpha(e.target.value.toUpperCase())}
+                          className="input-cyber flex-1 text-sm"
+                          placeholder="From Level 1"
+                          maxLength={4}
+                        />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-primary">Fragment Beta (Level 2):</span>
-                        <span className="text-secondary font-bold">TEM</span>
+                        <span className="text-primary w-24">Fragment Beta:</span>
+                        <input
+                          type="text"
+                          value={fragmentBeta}
+                          onChange={e => setFragmentBeta(e.target.value.toUpperCase())}
+                          className="input-cyber flex-1 text-sm"
+                          placeholder="From Level 2"
+                          maxLength={4}
+                        />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-primary">Fragment Gamma (Level 3):</span>
-                        <span className="text-secondary font-bold">HALT</span>
+                        <span className="text-primary w-24">Fragment Gamma:</span>
+                        <input
+                          type="text"
+                          value={fragmentGamma}
+                          onChange={e => setFragmentGamma(e.target.value.toUpperCase())}
+                          className="input-cyber flex-1 text-sm"
+                          placeholder="From Level 3"
+                          maxLength={4}
+                        />
                       </div>
-                      <div className="border-t border-secondary/30 pt-2 mt-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-primary w-24">Keyword:</span>
+                        <input
+                          type="text"
+                          value={keyword}
+                          onChange={e => setKeyword(e.target.value.toUpperCase())}
+                          className="input-cyber flex-1 text-sm"
+                          placeholder="From glitch image"
+                          maxLength={5}
+                        />
+                      </div>
+                      <div className="border-t border-secondary/30 pt-3 mt-3">
                         <div className="flex items-center gap-2">
                           <span className="text-primary">Base Text:</span>
-                          <span className="text-secondary font-bold text-lg">SYSTEMHALT</span>
+                          <span className="text-secondary font-bold text-lg">
+                            {fragmentAlpha && fragmentBeta && fragmentGamma 
+                              ? `${fragmentAlpha}${fragmentBeta}${fragmentGamma}` 
+                              : '___________'
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -300,9 +346,9 @@ const Level4 = () => {
                       <div className="text-sm text-accent/90">
                         <div className="font-bold mb-1">CHALLENGE:</div>
                         <div className="text-xs space-y-1">
-                          <div>• Combine fragments: SYS + TEM + HALT = SYSTEMHALT</div>
-                          <div>• Use Vigenère cipher with keyword: OMEGA (repeat as needed)</div>
-                          <div>• SYSTEMHALT + OMEGAOMEGA = ?</div>
+                          <div>• Enter the 3 override fragments you collected</div>
+                          <div>• Enter the keyword from the glitch image</div>
+                          <div>• Use Vigenère cipher: Base Text + Keyword</div>
                           <div>• Enter the final 10-letter encrypted string</div>
                         </div>
                       </div>
