@@ -89,15 +89,26 @@ const GlitchedFace = ({ onClick }: { onClick: () => void }) => (
   </motion.div>
 );
 
-const CountdownTimer = () => {
-  const [time, setTime] = useState(300); // 5 minutes countdown
+const CountdownTimer = ({ onTimeout }: { onTimeout: () => void }) => {
+  const [time, setTime] = useState(600); // 10 minutes countdown
   
   useEffect(() => {
+    if (time === 0) {
+      onTimeout();
+      return;
+    }
+    
     const timer = setInterval(() => {
-      setTime(prev => Math.max(0, prev - 1));
+      setTime(prev => {
+        if (prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
+    
     return () => clearInterval(timer);
-  }, []);
+  }, [time, onTimeout]);
 
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
@@ -106,10 +117,10 @@ const CountdownTimer = () => {
     <motion.div 
       className="text-center mb-6"
       animate={{ 
-        color: time < 60 ? ['hsl(345,100%,50%)', 'hsl(345,100%,80%)', 'hsl(345,100%,50%)'] : 'hsl(345,100%,50%)',
-        scale: time < 60 ? [1, 1.1, 1] : 1
+        color: time < 120 ? ['hsl(345,100%,50%)', 'hsl(345,100%,80%)', 'hsl(345,100%,50%)'] : 'hsl(345,100%,50%)',
+        scale: time < 120 ? [1, 1.1, 1] : 1
       }}
-      transition={{ duration: 1, repeat: time < 60 ? Infinity : 0 }}
+      transition={{ duration: 1, repeat: time < 120 ? Infinity : 0 }}
     >
       <div className="text-4xl font-mono font-bold text-destructive">
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -129,6 +140,7 @@ const Level4 = () => {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [victory, setVictory] = useState(false);
   const [showImageInspector, setShowImageInspector] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   
   const { submitAnswer, addScore, setCurrentLevel, stopTimer, level4Stage, setLevel4Stage } = useGame();
   const navigate = useNavigate();
@@ -196,7 +208,7 @@ const Level4 = () => {
             />
           </div>
 
-          <CountdownTimer />
+          <CountdownTimer onTimeout={() => setTimedOut(true)} />
 
           {/* Sub-Puzzle 1: Glitch Image */}
           {(level4Stage === 'glitch' || !level4Stage) && (
@@ -472,6 +484,50 @@ const Level4 = () => {
                 className="text-2xl text-secondary"
               >
                 OMEGA TERMINATED
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Timeout/Game Over screen */}
+      <AnimatePresence>
+        {timedOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="text-center"
+            >
+              <motion.div
+                animate={{ 
+                  opacity: [1, 0.3, 1],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="text-6xl font-bold mb-6 text-destructive"
+              >
+                SYSTEM WIPED
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-2xl text-destructive/80 mb-4"
+              >
+                OMEGA HAS PURGED ALL DATA
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="text-lg text-muted-foreground"
+              >
+                Time ran out. The kill switch was never activated.
               </motion.div>
             </motion.div>
           </motion.div>

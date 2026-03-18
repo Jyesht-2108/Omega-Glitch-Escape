@@ -7,12 +7,12 @@ import { Code, FileCode, Terminal as TerminalIcon, AlertCircle } from 'lucide-re
 // Simple Python code with an off-by-one error
 const CORRUPTED_CODE = `def generate_bypass_token():
     # Generate security bypass token
+    password = "BYPASS"
     token = ""
-    codes = [66, 89, 80, 65, 83, 83]  # ASCII codes
     
-    # BUG: range should be range(len(codes)), not range(len(codes) - 1)
-    for i in range(len(codes) - 1):
-        token += chr(codes[i])
+    # BUG: range should be range(len(password)), not range(len(password) - 1)
+    for i in range(len(password) - 1):
+        token += password[i]
     
     return token
 
@@ -108,7 +108,7 @@ const Level2 = () => {
               <div className="text-xs space-y-1">
                 <div>• The code has an off-by-one error in the loop</div>
                 <div>• Trace through the code manually to find what it ACTUALLY outputs</div>
-                <div>• Enter the exact output the buggy code produces</div>
+                <div>• The password is "BYPASS" but the loop doesn't process all characters</div>
               </div>
             </div>
           </div>

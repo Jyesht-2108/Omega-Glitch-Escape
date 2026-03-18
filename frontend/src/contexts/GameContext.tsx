@@ -44,11 +44,21 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 const MOCK_HINTS: Record<string, string> = {
-  '1': ">> HINT: XOR gates flip bits. Think about what happens when both inputs are 1...",
+  // Level 1 hints
+  '1': ">> SYSTEM NOTE: The language of machines is base-2, but human ports are base-10. For the physical lock, remember your logic tables: XOR only outputs TRUE when its inputs are different.",
+
+  // Level 2 hints
   '2': ">> HINT: Trace through the Python code line by line. Pay attention to the range() function - does it include all elements of the list?",
   '2-stage2': ">> SYSTEM OVERRIDE DETECTED: If you cannot reach an outside decoder, use the environment you are trapped in. Press F12 to open the Developer Console. Type atob(\"bGV2ZWwzLWFkbWlu\") and press Enter to translate the Base64 string to plain text. Once you have the decoded file name, add it to the end of your current web address in the URL bar (e.g., current-domain.com/decoded-text) and hit Enter.",
-  '3': ">> SYSTEM NOTE: A stack is like a pile of plates—Last In, First Out. For the dataset, OMEGA's math is flawed. An AI's confidence score can never exceed 100 percent (1.0).",
-  '4': "You found my name, but it is too small to stop me. My presence is infinite. I will echo over your broken fragments, again and again. Cross my name with yours on the grid, and see what you become.",
+
+  // Level 3 hints
+  '3-pointers': ">> HINT: Trace through the pointer arithmetic step by step. Remember: ptr++ moves to the next element, ptr-3 moves back 3 positions. What value does *ptr point to at the end?",
+  '3-stack': ">> SYSTEM NOTE: A stack is like a pile of plates—Last In, First Out. PUSH adds to the top, POP removes from the top. Trace through all 15 operations carefully.",
+  '3-dataset': ">> HINT: OMEGA's math is flawed. An AI's confidence score can never exceed 100 percent (1.0). Search for any value greater than 1.0 in the confidence column.",
+
+  // Level 4 hints
+  '4-glitch': ">> HINT: The glitched image contains hidden information. Click to examine it closely, or check the image metadata. The keyword is embedded within.",
+  '4-cipher': "You found my name, but it is too small to stop me. My presence is infinite. I will echo over your broken fragments, again and again. Cross my name with yours on the grid, and see what you become.",
 };
 
 const MOCK_ANSWERS: Record<string, string> = {
@@ -70,8 +80,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
-        return { 
-          ...parsed, 
+        return {
+          ...parsed,
           leaderboard: MOCK_LEADERBOARD,
           level3Stage: parsed.level3Stage || 'pointers', // Ensure level3Stage exists
           level4Stage: parsed.level4Stage || 'glitch' // Ensure level4Stage exists

@@ -11,23 +11,45 @@ const formatTime = (s: number) => {
 };
 
 const HUD = () => {
-  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName, level2Stage, level3Stage } = useGame();
+  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName, level2Stage, level3Stage, level4Stage } = useGame();
   const [showHint, setShowHint] = useState(false);
   const [hintText, setHintText] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleHintRequest = () => {
-    // For Level 2, show different hints based on stage
     let hint;
+    
+    // Determine which hint to show based on level and stage
     if (currentLevel === 2 && level2Stage === 'base64') {
       hint = requestHint('2-stage2');
+    } else if (currentLevel === 3) {
+      // Level 3 has three stages
+      if (level3Stage === 'pointers') {
+        hint = requestHint('3-pointers');
+      } else if (level3Stage === 'stack') {
+        hint = requestHint('3-stack');
+      } else if (level3Stage === 'dataset') {
+        hint = requestHint('3-dataset');
+      } else {
+        hint = requestHint('3-pointers'); // Default to first stage
+      }
+    } else if (currentLevel === 4) {
+      // Level 4 has two stages
+      if (level4Stage === 'glitch') {
+        hint = requestHint('4-glitch');
+      } else if (level4Stage === 'cipher') {
+        hint = requestHint('4-cipher');
+      } else {
+        hint = requestHint('4-glitch'); // Default to first stage
+      }
     } else {
       hint = requestHint(currentLevel);
     }
+    
     setHintText(hint);
     setShowConfirm(false);
     setShowHint(true);
-    setTimeout(() => setShowHint(false), 12000);
+    setTimeout(() => setShowHint(false), 15000); // Show for 15 seconds
   };
 
   return (
