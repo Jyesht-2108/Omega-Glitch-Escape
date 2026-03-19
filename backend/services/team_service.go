@@ -30,6 +30,10 @@ func NewTeamService(cfg *config.Config) (*TeamService, error) {
 	}, nil
 }
 
+func (s *TeamService) GetClient() *supabase.Client {
+	return s.client
+}
+
 func (s *TeamService) CreateTeam(ctx context.Context, req models.CreateTeamRequest) (*models.Team, error) {
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -137,13 +141,30 @@ func (s *TeamService) UpdateTeam(ctx context.Context, teamID string, updates map
 }
 
 func (s *TeamService) UpdateProgress(ctx context.Context, teamID string, req models.UpdateProgressRequest) error {
+	// Update main team record
 	updates := map[string]interface{}{
 		"current_level":  req.CurrentLevel,
 		"score":          req.Score,
 		"time_remaining": req.TimeRemaining,
 	}
 
-	return s.UpdateTeam(ctx, teamID, updates)
+	err := s.UpdateTeam(ctx, teamID, updates)
+	if err != nil {
+		return err
+	}
+
+	// Record detailed progress if stage is provided
+	if req.Stage != "" {
+		progress := map[string]interface{}{
+			"team_id": teamID,
+			"level":   req.CurrentLevel,
+			"stage":   req.Stage,
+		}
+		// Insert progress record (will create multiple records as they progress)
+		_, _, _ = s.client.From("team_progress").Insert(progress, false, "", "", "").Execute()
+	}
+
+	return nil
 }
 
 func (s *TeamService) RecordLevelCompletion(ctx context.Context, teamID string, level int, stage string) error {
@@ -225,6 +246,23 @@ func (s *TeamService) GetAllTeams(ctx context.Context) ([]models.Team, error) {
 func (s *TeamService) DeleteTeam(ctx context.Context, teamID string) error {
 	_, _, err := s.client.From("teams").
 		Delete("", "").
+		Eq("id", teamID).
+		Execute()
+
+	return err
+}
+
+func (s *TeamService) DisqualifyTeam(ctx context.Context, teamID string, reason string) error {
+	updates := map[string]interface{}{
+		"is_disqualified":      true,
+		"disqualified_reason":  reason,
+		"disqualified_at":      time.Now(),
+		"is_active":            false,
+		"updated_at":           time.Now(),
+	}
+
+	_, _, err := s.client.From("teams").
+		Update(updates, "", "").
 		Eq("id", teamID).
 		Execute()
 

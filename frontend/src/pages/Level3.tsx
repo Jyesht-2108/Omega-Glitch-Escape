@@ -66,18 +66,19 @@ const Level3 = () => {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [search, setSearch] = useState('');
 
-  const { submitAnswer, addScore, setCurrentLevel, level3Stage, setLevel3Stage } = useGame();
+  const { submitAnswer, addScore, setCurrentLevel, level3Stage, setLevel3Stage, startTimer } = useGame();
   const navigate = useNavigate();
   const dataset = useMemo(generateDataset, []);
 
   useEffect(() => {
     setCurrentLevel(3);
+    startTimer(); // Start timer when entering level
     // Reset to pointers stage when entering Level 3
     if (!level3Stage) {
       setLevel3Stage('pointers');
     }
     console.log('Level3 - current stage:', level3Stage);
-  }, [setCurrentLevel, level3Stage, setLevel3Stage]);
+  }, [setCurrentLevel, level3Stage, setLevel3Stage, startTimer]);
 
   const filtered = search ? dataset.filter(r =>
     r.id.includes(search) || r.model.includes(search) || r.status.includes(search.toUpperCase()) || r.confidence.includes(search)

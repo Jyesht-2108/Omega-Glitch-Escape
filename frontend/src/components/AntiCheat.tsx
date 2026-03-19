@@ -3,20 +3,81 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Skull } from 'lucide-react';
 import { playAlarmSiren, playExplosion, playCountdownBeep } from '@/lib/synthAudio';
 import { useGame } from '@/contexts/GameContext';
+import { teamService } from '@/services/teamService';
+
+const ANTI_CHEAT_ENABLED = import.meta.env.VITE_ANTI_CHEAT_ENABLED === 'true';
+const MAX_STRIKES = parseInt(import.meta.env.VITE_ANTI_CHEAT_MAX_STRIKES || '3');
 
 const AntiCheat = () => {
-  const { isLoggedIn, currentLevel } = useGame();
-  const [show, setShow] = useState(false);
-  const [strikes, setStrikes] = useState(0);
-  const [countdown, setCountdown] = useState(60);
-  const [canDismiss, setCanDismiss] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
+  const { isLoggedIn, currentLevel, teamId } = useGame();
+  
+  // Load strikes from localStorage
+  const [show, setShow] = useState(() => {
+    if (!ANTI_CHEAT_ENABLED) return false;
+    const saved = localStorage.getItem(`antiCheat_warning_${teamId}`);
+    return saved === 'true';
+  });
+  const [strikes, setStrikes] = useState(() => {
+    if (!ANTI_CHEAT_ENABLED) return 0;
+    const saved = localStorage.getItem(`antiCheat_strikes_${teamId}`);
+    return saved ? parseInt(saved) : 0;
+  });
+  const [countdown, setCountdown] = useState(() => {
+    if (!ANTI_CHEAT_ENABLED) return 60;
+    const saved = localStorage.getItem(`antiCheat_countdown_${teamId}`);
+    return saved ? parseInt(saved) : 60;
+  });
+  const [canDismiss, setCanDismiss] = useState(() => {
+    if (!ANTI_CHEAT_ENABLED) return false;
+    const saved = localStorage.getItem(`antiCheat_canDismiss_${teamId}`);
+    return saved === 'true';
+  });
+  const [gameOver, setGameOver] = useState(() => {
+    if (!ANTI_CHEAT_ENABLED) return false;
+    const saved = localStorage.getItem(`antiCheat_gameOver_${teamId}`);
+    return saved === 'true';
+  });
   const [explosionCountdown, setExplosionCountdown] = useState(10);
   const [exploded, setExploded] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopAlarmRef = useRef<(() => void) | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Save strikes to localStorage whenever they change
+  useEffect(() => {
+    if (teamId && ANTI_CHEAT_ENABLED) {
+      localStorage.setItem(`antiCheat_strikes_${teamId}`, strikes.toString());
+    }
+  }, [strikes, teamId]);
+
+  // Save warning state to localStorage
+  useEffect(() => {
+    if (teamId && ANTI_CHEAT_ENABLED) {
+      localStorage.setItem(`antiCheat_warning_${teamId}`, show.toString());
+    }
+  }, [show, teamId]);
+
+  // Save countdown to localStorage
+  useEffect(() => {
+    if (teamId && ANTI_CHEAT_ENABLED) {
+      localStorage.setItem(`antiCheat_countdown_${teamId}`, countdown.toString());
+    }
+  }, [countdown, teamId]);
+
+  // Save canDismiss to localStorage
+  useEffect(() => {
+    if (teamId && ANTI_CHEAT_ENABLED) {
+      localStorage.setItem(`antiCheat_canDismiss_${teamId}`, canDismiss.toString());
+    }
+  }, [canDismiss, teamId]);
+
+  // Save gameOver to localStorage
+  useEffect(() => {
+    if (teamId && ANTI_CHEAT_ENABLED) {
+      localStorage.setItem(`antiCheat_gameOver_${teamId}`, gameOver.toString());
+    }
+  }, [gameOver, teamId]);
 
   useEffect(() => {
     // Create audio element
@@ -89,18 +150,34 @@ const AntiCheat = () => {
   }, []);
 
   const triggerWarning = useCallback(() => {
+    if (!ANTI_CHEAT_ENABLED) return; // Skip if anti-cheat is disabled
     if (gameOver || exploded) return;
 
     const newStrikes = strikes + 1;
     setStrikes(newStrikes);
     
+    console.log(`Anti-cheat violation detected. Strike ${newStrikes}/${MAX_STRIKES}`);
+    
     // Play sound IMMEDIATELY when warning is triggered
     playAlert();
 
-    if (newStrikes >= 3) {
+    // Timer continues running as penalty - no pause needed
+
+    if (newStrikes >= MAX_STRIKES) {
       // Game over - OMEGA caught you
+      console.log('Maximum strikes reached - disqualifying team');
       setShow(false);
       setGameOver(true);
+      
+      // Disqualify team in backend
+      teamService.disqualifyTeam('Anti-cheat violation: Maximum strikes reached')
+        .then(() => {
+          console.log('Team disqualified in backend');
+        })
+        .catch((error) => {
+          console.error('Failed to disqualify team:', error);
+        });
+      
       // Start synthesized alarm siren
       stopAlarmRef.current = playAlarmSiren();
     } else {
@@ -117,7 +194,6 @@ const AntiCheat = () => {
       // Start countdown with more robust logic
       countdownIntervalRef.current = setInterval(() => {
         setCountdown(prev => {
-          console.log('Countdown tick:', prev); // Debug log
           if (prev <= 1) {
             if (countdownIntervalRef.current) {
               clearInterval(countdownIntervalRef.current);
@@ -159,6 +235,7 @@ const AntiCheat = () => {
   const handleVisibility = useCallback(() => {
     // Only trigger if user is logged in and playing the game
     if (!isLoggedIn || currentLevel < 1) return;
+    if (!ANTI_CHEAT_ENABLED) return; // Skip if disabled
     
     // Only trigger if the page is actually hidden (tab switch)
     if (document.hidden) {
@@ -180,7 +257,7 @@ const AntiCheat = () => {
   useEffect(() => {
     // Only listen for visibility changes (tab switching)
     // Only activate when user is logged in and playing
-    if (!isLoggedIn || currentLevel < 1) return;
+    if (!isLoggedIn || currentLevel < 1 || !ANTI_CHEAT_ENABLED) return;
     
     document.addEventListener('visibilitychange', handleVisibility);
     
@@ -198,6 +275,26 @@ const AntiCheat = () => {
       }
     };
   }, []);
+
+  // Restart countdown if warning is showing on mount (after refresh)
+  useEffect(() => {
+    if (show && countdown > 0 && !canDismiss && !countdownIntervalRef.current) {
+      console.log('Restarting countdown after page refresh');
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
+            setCanDismiss(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [show, countdown, canDismiss]);
 
   // Debug effect to monitor countdown
   useEffect(() => {
@@ -241,7 +338,21 @@ const AntiCheat = () => {
     setShow(false);
     setCountdown(60);
     setCanDismiss(false);
+    
+    // Clear localStorage
+    if (teamId) {
+      localStorage.removeItem(`antiCheat_warning_${teamId}`);
+      localStorage.removeItem(`antiCheat_countdown_${teamId}`);
+      localStorage.removeItem(`antiCheat_canDismiss_${teamId}`);
+    }
+    
+    // Timer continues running - no resume needed
   };
+
+  // If anti-cheat is disabled, don't render anything
+  if (!ANTI_CHEAT_ENABLED) {
+    return null;
+  }
 
   // Exploded = total destruction screen
   if (exploded) {
@@ -405,7 +516,7 @@ const AntiCheat = () => {
           </p>
 
           <p className="text-destructive-foreground/60 font-mono text-sm mb-8">
-            Strike {strikes} of 3 — {strikes >= 3 ? 'FINAL WARNING' : `${3 - strikes} remaining`}
+            Strike {strikes} of {MAX_STRIKES} — {strikes >= MAX_STRIKES ? 'FINAL WARNING' : `${MAX_STRIKES - strikes} remaining`}
           </p>
 
           <p className="text-destructive-foreground font-mono text-3xl mb-8 tabular-nums">

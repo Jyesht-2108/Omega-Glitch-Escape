@@ -18,6 +18,7 @@ type SupabaseClaims struct {
 type CustomClaims struct {
 	TeamID   string `json:"team_id"`
 	TeamName string `json:"team_name"`
+	Username string `json:"username"` // For admin username
 	IsAdmin  bool   `json:"is_admin"`
 	jwt.RegisteredClaims
 }
@@ -49,6 +50,9 @@ func AuthRequired(cfg *config.Config) fiber.Handler {
 				c.Locals("teamID", claims.TeamID)
 				c.Locals("teamName", claims.TeamName)
 				c.Locals("isAdmin", claims.IsAdmin)
+				if claims.IsAdmin && claims.Username != "" {
+					c.Locals("admin_username", claims.Username)
+				}
 				return c.Next()
 			}
 		}

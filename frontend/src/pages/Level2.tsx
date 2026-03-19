@@ -23,9 +23,12 @@ print(result)
 const Level2 = () => {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const { submitAnswer, addScore, setCurrentLevel, level2Stage, setLevel2Stage } = useGame();
+  const { submitAnswer, addScore, setCurrentLevel, level2Stage, setLevel2Stage, startTimer } = useGame();
 
-  useEffect(() => { setCurrentLevel(2); }, [setCurrentLevel]);
+  useEffect(() => { 
+    setCurrentLevel(2); 
+    startTimer();
+  }, [setCurrentLevel, startTimer]);
 
   const handleSubmit = () => {
     if (submitAnswer(2, answer)) {

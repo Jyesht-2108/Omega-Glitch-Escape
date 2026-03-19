@@ -42,6 +42,7 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	team.Get("/me", teamHandler.GetCurrentTeam)
 	team.Put("/progress", teamHandler.UpdateProgress)
 	team.Post("/complete", teamHandler.CompleteGame)
+	team.Post("/disqualify", teamHandler.DisqualifyTeam)
 
 	// Leaderboard (public)
 	api.Get("/leaderboard", teamHandler.GetLeaderboard)
@@ -58,7 +59,17 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	admin.Put("/teams/:id", adminHandler.UpdateTeam)
 	admin.Delete("/teams/:id", adminHandler.DeleteTeam)
 	admin.Post("/teams/:id/reset", adminHandler.ResetTeam)
+	admin.Post("/teams/:id/disqualify", adminHandler.DisqualifyTeam)
+	admin.Post("/teams/:id/requalify", adminHandler.RequalifyTeam)
+	admin.Post("/teams/:id/adjust-time", adminHandler.AdjustTime)
+	admin.Post("/teams/:id/adjust-score", adminHandler.AdjustScore)
+	admin.Get("/teams/:id/progress", adminHandler.GetTeamProgress)
 	
-	// Stats
+	// Bulk actions
+	admin.Post("/bulk-action", adminHandler.BulkAction)
+	
+	// Stats and logs
 	admin.Get("/stats", adminHandler.GetStats)
+	admin.Get("/logs", adminHandler.GetAdminLogs)
+	admin.Get("/leaderboard", adminHandler.GetAdvancedLeaderboard)
 }

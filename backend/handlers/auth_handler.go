@@ -70,8 +70,20 @@ func (h *AuthHandler) AdminLogin(c *fiber.Ctx) error {
 		})
 	}
 
-	// Generate admin JWT token
-	token, err := h.generateToken("admin", "admin", true)
+	// Generate admin JWT token with username
+	claims := middleware.CustomClaims{
+		TeamID:   "admin",
+		TeamName: "admin",
+		Username: req.TeamName,
+		IsAdmin:  true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(h.cfg.SupabaseJWTSecret))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to generate token",
@@ -79,7 +91,7 @@ func (h *AuthHandler) AdminLogin(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"token": token,
+		"token": tokenString,
 		"admin": true,
 	})
 }

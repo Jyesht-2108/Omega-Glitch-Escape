@@ -142,16 +142,17 @@ const Level4 = () => {
   const [showImageInspector, setShowImageInspector] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   
-  const { submitAnswer, addScore, setCurrentLevel, stopTimer, level4Stage, setLevel4Stage } = useGame();
+  const { submitAnswer, addScore, setCurrentLevel, stopTimer, level4Stage, setLevel4Stage, startTimer } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => { 
     setCurrentLevel(4); 
+    startTimer(); // Start timer when entering level
     // Reset to glitch stage when entering Level 4
     if (!level4Stage) {
       setLevel4Stage('glitch');
     }
-  }, [setCurrentLevel, level4Stage, setLevel4Stage]);
+  }, [setCurrentLevel, level4Stage, setLevel4Stage, startTimer]);
 
   const handleGlitchSubmit = () => {
     if (submitAnswer('4-glitch', glitchAnswer)) {

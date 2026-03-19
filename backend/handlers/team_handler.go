@@ -115,3 +115,29 @@ func (h *TeamHandler) GetLeaderboard(c *fiber.Ctx) error {
 
 	return c.JSON(leaderboard)
 }
+
+func (h *TeamHandler) DisqualifyTeam(c *fiber.Ctx) error {
+	teamID := c.Locals("teamID").(string)
+
+	var req models.DisqualifyTeamRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if req.Reason == "" {
+		req.Reason = "Anti-cheat violation"
+	}
+
+	if err := h.teamService.DisqualifyTeam(c.Context(), teamID, req.Reason); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to disqualify team",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Team disqualified",
+		"reason":  req.Reason,
+	})
+}

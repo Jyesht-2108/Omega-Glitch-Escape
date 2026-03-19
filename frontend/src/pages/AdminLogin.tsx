@@ -1,47 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '@/contexts/GameContext';
-import { authService } from '@/services/authService';
+import { Shield, Lock, AlertCircle } from 'lucide-react';
 import Typewriter from '@/components/Typewriter';
 import GlitchText from '@/components/GlitchText';
-import { Terminal, Lock, AlertCircle } from 'lucide-react';
 
-const Login = () => {
-  const [teamName, setTeamName] = useState('');
+const AdminLogin = () => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isLoggedIn, currentLevel } = useGame();
   const navigate = useNavigate();
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isLoggedIn) {
-      navigate(`/level/${currentLevel}`);
-    }
-  }, [isLoggedIn, currentLevel, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!teamName.trim() || !password.trim()) {
-      setError('Please enter both team name and password');
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Call real API
-      const response = await authService.login(teamName, password);
-      
-      // Update game context with login response
-      await login(teamName, password, response);
-      
-      // Navigate to current level
-      navigate(`/level/${response.team.current_level}`);
+      const response = await fetch('http://localhost:3000/api/auth/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ team_name: username, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid credentials');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('adminToken', data.token);
+      navigate('/admin/dashboard');
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
       setLoading(false);
@@ -54,35 +51,35 @@ const Login = () => {
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
-        className="w-full max-w-md border border-border bg-card p-8 box-glow-cyan"
+        className="w-full max-w-md border border-destructive bg-card p-8 box-glow-red"
       >
-        <div className="flex items-center gap-2 mb-2 text-primary">
-          <Terminal className="w-5 h-5" />
-          <span className="text-xs text-muted-foreground">OMEGA_TERMINAL v4.2.1</span>
+        <div className="flex items-center gap-2 mb-2 text-destructive">
+          <Shield className="w-5 h-5" />
+          <span className="text-xs text-muted-foreground">ADMIN ACCESS TERMINAL</span>
         </div>
 
-        <div className="border-b border-border mb-6 pb-4">
-          <h1 className="text-2xl font-bold text-glow-cyan mb-2">
-            <GlitchText text="PROJECT OMEGA" className="text-primary" />
+        <div className="border-b border-destructive mb-6 pb-4">
+          <h1 className="text-2xl font-bold text-glow-red mb-2">
+            <GlitchText text="SYSTEM CONTROL" className="text-destructive" />
           </h1>
           <div className="text-sm text-muted-foreground">
-            <Typewriter text=">> INITIALIZING SECURE CONNECTION... AUTHENTICATION REQUIRED" speed={20} />
+            <Typewriter text=">> RESTRICTED ACCESS - AUTHORIZATION REQUIRED" speed={20} />
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">TEAM_IDENTIFIER:</label>
+            <label className="text-xs text-muted-foreground mb-1 block">ADMIN_USERNAME:</label>
             <input
-              value={teamName}
-              onChange={e => setTeamName(e.target.value)}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               className="input-cyber w-full"
-              placeholder="ENTER_TEAM_NAME"
+              placeholder="ENTER_ADMIN_ID"
               autoFocus
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">ACCESS_KEY:</label>
+            <label className="text-xs text-muted-foreground mb-1 block">ADMIN_PASSWORD:</label>
             <input
               type="password"
               value={password}
@@ -108,19 +105,19 @@ const Login = () => {
             disabled={loading}
             whileHover={{ scale: loading ? 1 : 1.02 }}
             whileTap={{ scale: loading ? 1 : 0.98 }}
-            className="w-full py-3 bg-primary text-primary-foreground font-mono font-bold tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-destructive text-destructive-foreground font-mono font-bold tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Lock className="w-4 h-4" />
-            {loading ? 'AUTHENTICATING...' : 'AUTHENTICATE'}
+            {loading ? 'AUTHENTICATING...' : 'ADMIN ACCESS'}
           </motion.button>
         </form>
 
         <div className="mt-6 text-xs text-muted-foreground text-center animate-flicker">
-          ▸ UNAUTHORIZED ACCESS WILL BE PROSECUTED ◂
+          ▸ UNAUTHORIZED ACCESS WILL BE LOGGED ◂
         </div>
       </motion.div>
     </div>
   );
 };
 
-export default Login;
+export default AdminLogin;
