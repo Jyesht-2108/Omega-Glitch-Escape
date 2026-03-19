@@ -19,6 +19,7 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	authHandler := handlers.NewAuthHandler(teamService, cfg)
 	teamHandler := handlers.NewTeamHandler(teamService)
 	adminHandler := handlers.NewAdminHandler(teamService)
+	puzzleHandler := handlers.NewPuzzleHandler(teamService)
 
 	// API routes
 	api := app.Group("/api")
@@ -43,6 +44,12 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	team.Put("/progress", teamHandler.UpdateProgress)
 	team.Post("/complete", teamHandler.CompleteGame)
 	team.Post("/disqualify", teamHandler.DisqualifyTeam)
+
+	// Puzzle routes (protected)
+	puzzle := api.Group("/puzzle")
+	puzzle.Use(middleware.AuthRequired(cfg))
+	puzzle.Post("/submit", puzzleHandler.SubmitAnswer)
+	puzzle.Post("/hint", puzzleHandler.RequestHint)
 
 	// Leaderboard (public)
 	api.Get("/leaderboard", teamHandler.GetLeaderboard)

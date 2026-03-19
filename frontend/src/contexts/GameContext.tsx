@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { authService, Team, LoginResponse } from '@/services/authService';
 import { teamService } from '@/services/teamService';
 import { leaderboardService } from '@/services/leaderboardService';
+import { puzzleService } from '@/services/puzzleService';
 
 interface LeaderboardEntry {
   rank: number;
@@ -35,8 +36,8 @@ interface GameContextType extends GameState {
   stopTimer: () => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
-  submitAnswer: (level: number | string, answer: string) => boolean;
-  requestHint: (level: number | string) => string;
+  submitAnswer: (level: string, answer: string) => Promise<{ correct: boolean; message: string }>;
+  requestHint: (level: string) => Promise<string>;
   resetGame: () => void;
   setLevel2Stage: (stage: 'python' | 'base64') => void;
   setLevel3Stage: (stage: 'pointers' | 'stack' | 'dataset') => void;
@@ -55,33 +56,11 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, team: "ZERO_DAY", time: "02:15:44" },
 ];
 
-const MOCK_HINTS: Record<string, string> = {
-  // Level 1 hints
-  '1': ">> SYSTEM NOTE: The language of machines is base-2, but human ports are base-10. For the physical lock, remember your logic tables: XOR only outputs TRUE when its inputs are different.",
-
-  // Level 2 hints
-  '2': ">> HINT: Trace through the Python code line by line. Pay attention to the range() function - does it include all elements of the list?",
-  '2-stage2': ">> SYSTEM OVERRIDE DETECTED: If you cannot reach an outside decoder, use the environment you are trapped in. Press F12 to open the Developer Console. Type atob(\"bGV2ZWwzLWFkbWlu\") and press Enter to translate the Base64 string to plain text. Once you have the decoded file name, add it to the end of your current web address in the URL bar (e.g., current-domain.com/decoded-text) and hit Enter.",
-
-  // Level 3 hints
-  '3-pointers': ">> HINT: Trace through the pointer arithmetic step by step. Remember: ptr++ moves to the next element, ptr-3 moves back 3 positions. What value does *ptr point to at the end?",
-  '3-stack': ">> SYSTEM NOTE: A stack is like a pile of plates—Last In, First Out. PUSH adds to the top, POP removes from the top. Trace through all 15 operations carefully.",
-  '3-dataset': ">> HINT: OMEGA's math is flawed. An AI's confidence score can never exceed 100 percent (1.0). Search for any value greater than 1.0 in the confidence column.",
-
-  // Level 4 hints
-  '4-glitch': ">> HINT: The glitched image contains hidden information. Click to examine it closely, or check the image metadata. The keyword is embedded within.",
-  '4-cipher': "You found my name, but it is too small to stop me. My presence is infinite. I will echo over your broken fragments, again and again. Cross my name with yours on the grid, and see what you become.",
-};
-
-const MOCK_ANSWERS: Record<string, string> = {
-  '1': "SYS",
-  '2': "BYPAS",
-  '3-pointers': "42",
-  '3-stack': "3-17-42",
-  '3-dataset': "1.47",
-  '4-glitch': "OMEGA",
-  '4-cipher': "GKWZEATERT",
-};
+const MOCK_LEADERBOARD: LeaderboardEntry[] = [
+  { rank: 1, team: "Team Alpha", time: "02:15:30" },
+  { rank: 2, team: "Team Beta", time: "02:30:45" },
+  { rank: 3, team: "Team Gamma", time: "02:45:12" },
+];
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -289,15 +268,46 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, isTimerRunning: true }));
   }, []);
 
-  const submitAnswer = useCallback((level: number | string, answer: string): boolean => {
-    const key = typeof level === 'number' ? String(level) : level;
-    return answer.toUpperCase().trim() === MOCK_ANSWERS[key]?.toUpperCase();
+  const submitAnswer = useCallback(async (level: string, answer: string): Promise<{ correct: boolean; message: string }> => {
+    try {
+      const response = await puzzleService.submitAnswer(level, answer);
+      
+      // Update local state with backend response
+      setState(prev => ({
+        ...prev,
+        score: response.score,
+        timerSeconds: response.time_remaining,
+        currentLevel: response.current_level,
+      }));
+
+      return {
+        correct: response.correct,
+        message: response.message,
+      };
+    } catch (error: any) {
+      console.error('Failed to submit answer:', error);
+      return {
+        correct: false,
+        message: error.message || '>> ERROR: Failed to validate answer',
+      };
+    }
   }, []);
 
-  const requestHint = useCallback((level: number | string): string => {
-    setState(prev => ({ ...prev, timerSeconds: Math.max(0, prev.timerSeconds - 300) }));
-    const key = typeof level === 'number' ? String(level) : level;
-    return MOCK_HINTS[key] || ">> NO HINT AVAILABLE";
+  const requestHint = useCallback(async (level: string): Promise<string> => {
+    try {
+      const response = await puzzleService.requestHint(level);
+      
+      // Update local state with new time
+      setState(prev => ({
+        ...prev,
+        timerSeconds: response.time_remaining,
+      }));
+
+      return response.hint;
+    } catch (error: any) {
+      console.error('Failed to request hint:', error);
+      return ">> ERROR: Failed to retrieve hint";
+    }
   }, []);
 
   const setLevel2Stage = useCallback((stage: 'python' | 'base64') => {
