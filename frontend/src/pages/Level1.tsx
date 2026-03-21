@@ -159,14 +159,14 @@ const Level1 = () => {
   const [gateConfig, setGateConfig] = useState<GateConfig>('A');
   const [collectedOutputs, setCollectedOutputs] = useState<{ [key in GateConfig]?: string }>({});
   const [decimalInputs, setDecimalInputs] = useState<{ [key in GateConfig]?: string }>({});
-  const { submitAnswer, addScore, setCurrentLevel, startTimer } = useGame();
+  const { submitAnswer, startTimer, currentLevel } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => { 
-    setCurrentLevel(1);
+    // Level is already set by backend, just start timer
     // Only start timer if it's not already running
     startTimer();
-  }, [setCurrentLevel, startTimer]);
+  }, [startTimer]);
 
   const handleToggleInput = (index: number) => {
     setInputs(prev => prev.map((val, i) => i === index ? !val : val));
@@ -242,12 +242,29 @@ const Level1 = () => {
     return '';
   };
 
-  const handleSubmit = () => {
-    if (submitAnswer(1, answer)) {
-      setFeedback('correct');
-      addScore(100);
-      setTimeout(() => navigate('/level/2'), 1500);
-    } else {
+  const handleSubmit = async () => {
+    try {
+      console.log('Submitting answer for Level 1:', answer);
+      const result = await submitAnswer('1', answer);
+      console.log('Submit result:', result);
+      console.log('Current level after submit:', currentLevel);
+      
+      if (result.correct) {
+        setFeedback('correct');
+        console.log('Answer correct! Navigating to Level 2...');
+        // Wait for state to update, then navigate
+        setTimeout(() => {
+          console.log('Current level before navigation:', currentLevel);
+          console.log('Navigating now...');
+          navigate('/level/2');
+        }, 2000);
+      } else {
+        console.log('Answer incorrect');
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }

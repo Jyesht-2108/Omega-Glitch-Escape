@@ -1,11 +1,40 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useGame } from '@/contexts/GameContext';
 import GlitchText from '@/components/GlitchText';
 import Typewriter from '@/components/Typewriter';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 
 const Level3Admin = () => {
   const navigate = useNavigate();
+  const { submitAnswer, currentLevel } = useGame();
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    // Submit the base64 answer when page loads (only once)
+    const submitBase64Answer = async () => {
+      try {
+        // Submit "TEM" as the answer for level "2" to complete the level
+        const result = await submitAnswer('2', 'TEM');
+        console.log('Level 2 completed:', result);
+        setSubmitted(true);
+      } catch (error) {
+        console.error('Failed to complete level 2:', error);
+        // If submission fails (e.g., team disqualified), still allow navigation
+        setSubmitted(true);
+      }
+    };
+    submitBase64Answer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
+
+  const handleProceed = () => {
+    // Small delay to ensure state has updated from submission
+    setTimeout(() => {
+      navigate('/level/3');
+    }, 100);
+  };
 
   return (
     <motion.div
@@ -26,14 +55,21 @@ const Level3Admin = () => {
         </div>
         
         <motion.button
-          onClick={() => navigate('/level/3')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="px-6 py-3 bg-secondary text-secondary-foreground font-mono font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+          onClick={handleProceed}
+          disabled={!submitted}
+          whileHover={{ scale: submitted ? 1.05 : 1 }}
+          whileTap={{ scale: submitted ? 0.95 : 1 }}
+          className={`px-6 py-3 bg-secondary text-secondary-foreground font-mono font-bold transition-opacity flex items-center gap-2 mx-auto ${
+            submitted ? 'hover:opacity-90 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+          }`}
         >
-          PROCEED TO LEVEL 3
+          {submitted ? 'PROCEED TO LEVEL 3' : 'PROCESSING...'}
           <ArrowRight className="w-4 h-4" />
         </motion.button>
+        
+        {submitted && currentLevel < 3 && (
+          <p className="text-xs text-destructive mt-2">Waiting for level update...</p>
+        )}
       </div>
     </motion.div>
   );

@@ -24,40 +24,49 @@ const HUD = () => {
     navigate('/');
   };
 
-  const handleHintRequest = () => {
-    let hint;
+  const handleHintRequest = async () => {
+    let level;
     
     // Determine which hint to show based on level and stage
     if (currentLevel === 2 && level2Stage === 'base64') {
-      hint = requestHint('2-stage2');
+      level = '2-base64';
     } else if (currentLevel === 3) {
       // Level 3 has three stages
       if (level3Stage === 'pointers') {
-        hint = requestHint('3-pointers');
+        level = '3-pointers';
       } else if (level3Stage === 'stack') {
-        hint = requestHint('3-stack');
+        level = '3-stack';
       } else if (level3Stage === 'dataset') {
-        hint = requestHint('3-dataset');
+        level = '3-dataset';
       } else {
-        hint = requestHint('3-pointers'); // Default to first stage
+        level = '3-pointers'; // Default to first stage
       }
     } else if (currentLevel === 4) {
       // Level 4 has two stages
       if (level4Stage === 'glitch') {
-        hint = requestHint('4-glitch');
+        level = '4-glitch';
       } else if (level4Stage === 'cipher') {
-        hint = requestHint('4-cipher');
+        level = '4';
       } else {
-        hint = requestHint('4-glitch'); // Default to first stage
+        level = '4-glitch'; // Default to first stage
       }
     } else {
-      hint = requestHint(currentLevel);
+      level = String(currentLevel);
     }
     
-    setHintText(hint);
-    setShowConfirm(false);
-    setShowHint(true);
-    setTimeout(() => setShowHint(false), 15000); // Show for 15 seconds
+    try {
+      const hint = await requestHint(level);
+      setHintText(hint);
+      setShowConfirm(false);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 15000); // Show for 15 seconds
+    } catch (error) {
+      console.error('Failed to get hint:', error);
+      setHintText('>> ERROR: Failed to retrieve hint');
+      setShowConfirm(false);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 5000);
+    }
   };
 
   return (

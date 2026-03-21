@@ -27,6 +27,13 @@ export const teamService = {
   },
 
   /**
+   * Get current team data (alias for getTeam)
+   */
+  async getCurrentTeam(): Promise<Team> {
+    return this.getTeam();
+  },
+
+  /**
    * Update team progress
    */
   async updateProgress(data: UpdateProgressRequest): Promise<void> {

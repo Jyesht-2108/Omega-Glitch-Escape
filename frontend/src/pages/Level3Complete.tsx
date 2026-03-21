@@ -1,11 +1,29 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useGame } from '@/contexts/GameContext';
 import GlitchText from '@/components/GlitchText';
 import Typewriter from '@/components/Typewriter';
 import { Database, ArrowRight } from 'lucide-react';
 
 const Level3Complete = () => {
   const navigate = useNavigate();
+  const { submitAnswer } = useGame();
+
+  useEffect(() => {
+    // Submit the final Level 3 answer when page loads (only once)
+    const submitLevel3Answer = async () => {
+      try {
+        const result = await submitAnswer('3', 'HALT');
+        console.log('Level 3 answer submitted:', result);
+      } catch (error) {
+        console.error('Failed to submit Level 3 answer:', error);
+        // If submission fails, just show the page anyway
+      }
+    };
+    submitLevel3Answer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   return (
     <motion.div

@@ -12,15 +12,19 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isLoggedIn, currentLevel } = useGame();
+  const { login, isLoggedIn, currentLevel, gameCompleted } = useGame();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn) {
-      navigate(`/level/${currentLevel}`);
+      if (gameCompleted) {
+        navigate('/victory');
+      } else {
+        navigate(`/level/${currentLevel}`);
+      }
     }
-  }, [isLoggedIn, currentLevel, navigate]);
+  }, [isLoggedIn, currentLevel, gameCompleted, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +44,13 @@ const Login = () => {
       // Update game context with login response
       await login(teamName, password, response);
       
-      // Navigate to current level
-      navigate(`/level/${response.team.current_level}`);
+      // Check if game is completed
+      if (response.team.completed_at) {
+        navigate('/victory');
+      } else {
+        // Navigate to current level
+        navigate(`/level/${response.team.current_level}`);
+      }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
       setLoading(false);

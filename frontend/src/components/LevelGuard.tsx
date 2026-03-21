@@ -14,10 +14,18 @@ export const LevelGuard: React.FC<LevelGuardProps> = ({ requiredLevel, children 
 
   useEffect(() => {
     // Allow access to current level or lower
-    // Special case: level3-admin and level3-complete are part of level 3
-    const isLevel3Special = location.pathname === '/level3-admin' || location.pathname === '/level3-complete';
+    // Special case: level3-admin is part of level 2 (final puzzle)
+    // Special case: level3-complete is part of level 3
+    const isLevel3Admin = location.pathname === '/level3-admin';
+    const isLevel3Complete = location.pathname === '/level3-complete';
     
-    if (isLevel3Special) {
+    if (isLevel3Admin) {
+      // Allow if on level 2 or higher (it's the final puzzle of level 2)
+      if (currentLevel < 2) {
+        console.log(`Access denied to ${location.pathname}. Current level: ${currentLevel}, Required: 2`);
+        navigate(`/level/${currentLevel}`, { replace: true });
+      }
+    } else if (isLevel3Complete) {
       // Allow if on level 3 or higher
       if (currentLevel < 3) {
         console.log(`Access denied to ${location.pathname}. Current level: ${currentLevel}, Required: 3`);

@@ -9,7 +9,10 @@ const ANTI_CHEAT_ENABLED = import.meta.env.VITE_ANTI_CHEAT_ENABLED === 'true';
 const MAX_STRIKES = parseInt(import.meta.env.VITE_ANTI_CHEAT_MAX_STRIKES || '3');
 
 const AntiCheat = () => {
-  const { isLoggedIn, currentLevel, teamId } = useGame();
+  const { isLoggedIn, currentLevel, teamId, stopTimer, logout } = useGame();
+  
+  // Track last visibility change time to detect quick hide/show (navigation)
+  const lastVisibilityChangeRef = useRef(0);
   
   // Load strikes from localStorage
   const [show, setShow] = useState(() => {
@@ -169,13 +172,24 @@ const AntiCheat = () => {
       setShow(false);
       setGameOver(true);
       
+      // Stop the timer immediately
+      stopTimer();
+      
       // Disqualify team in backend
       teamService.disqualifyTeam('Anti-cheat violation: Maximum strikes reached')
         .then(() => {
           console.log('Team disqualified in backend');
+          // Logout after 5 seconds to show the game over screen
+          setTimeout(() => {
+            logout();
+          }, 5000);
         })
         .catch((error) => {
           console.error('Failed to disqualify team:', error);
+          // Still logout even if backend call fails
+          setTimeout(() => {
+            logout();
+          }, 5000);
         });
       
       // Start synthesized alarm siren
@@ -237,9 +251,19 @@ const AntiCheat = () => {
     if (!isLoggedIn || currentLevel < 1) return;
     if (!ANTI_CHEAT_ENABLED) return; // Skip if disabled
     
-    // Only trigger if the page is actually hidden (tab switch)
+    const now = Date.now();
+    
+    // If page becomes hidden
     if (document.hidden) {
-      triggerWarning();
+      lastVisibilityChangeRef.current = now;
+      
+      // Wait 300ms to see if page becomes visible again (navigation)
+      setTimeout(() => {
+        // If still hidden after 300ms, it's a real tab switch
+        if (document.hidden && Date.now() - lastVisibilityChangeRef.current >= 300) {
+          triggerWarning();
+        }
+      }, 300);
     }
   }, [triggerWarning, isLoggedIn, currentLevel]);
 

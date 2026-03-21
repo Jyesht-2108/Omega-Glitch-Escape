@@ -142,40 +142,52 @@ const Level4 = () => {
   const [showImageInspector, setShowImageInspector] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   
-  const { submitAnswer, addScore, setCurrentLevel, stopTimer, level4Stage, setLevel4Stage, startTimer } = useGame();
+  const { submitAnswer, stopTimer, level4Stage, setLevel4Stage, startTimer } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => { 
-    setCurrentLevel(4); 
+    // Level is already set by backend
     startTimer(); // Start timer when entering level
     // Reset to glitch stage when entering Level 4
     if (!level4Stage) {
       setLevel4Stage('glitch');
     }
-  }, [setCurrentLevel, level4Stage, setLevel4Stage, startTimer]);
+  }, [level4Stage, setLevel4Stage, startTimer]);
 
-  const handleGlitchSubmit = () => {
-    if (submitAnswer('4-glitch', glitchAnswer)) {
-      setFeedback('correct');
-      addScore(150);
-      setTimeout(() => {
-        setLevel4Stage('cipher');
-        setFeedback(null);
-      }, 1500);
-    } else {
+  const handleGlitchSubmit = async () => {
+    try {
+      const result = await submitAnswer('4-glitch', glitchAnswer);
+      if (result.correct) {
+        setFeedback('correct');
+        setTimeout(() => {
+          setLevel4Stage('cipher');
+          setFeedback(null);
+        }, 1500);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }
   };
 
-  const handleCipherSubmit = () => {
-    if (submitAnswer('4-cipher', cipherAnswer)) {
-      setFeedback('correct');
-      addScore(300);
-      stopTimer();
-      setTimeout(() => setVictory(true), 500);
-      setTimeout(() => navigate('/victory'), 3000);
-    } else {
+  const handleCipherSubmit = async () => {
+    try {
+      const result = await submitAnswer('4', cipherAnswer);
+      if (result.correct) {
+        setFeedback('correct');
+        stopTimer();
+        setTimeout(() => setVictory(true), 500);
+        setTimeout(() => navigate('/victory'), 3000);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }

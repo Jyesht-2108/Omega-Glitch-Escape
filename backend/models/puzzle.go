@@ -30,19 +30,19 @@ var PuzzleAnswers = map[string]string{
 	"1": "SYS",
 	
 	// Level 2
-	"2-python": "BYPASS",
+	"2-python": "BYPAS",
 	"2-base64": "level3-admin",
 	"2":        "TEM",
 	
 	// Level 3
-	"3-pointers": "4242",
-	"3-stack":    "789",
-	"3-dataset":  "USER_447",
+	"3-pointers": "42",
+	"3-stack":    "3-17-42",
+	"3-dataset":  "1.47",
 	"3":          "HALT",
 	
 	// Level 4
 	"4-glitch": "OMEGA",
-	"4":        "SYSTEMHALT",
+	"4":        "GKWZEATERT",
 }
 
 // Puzzle hints

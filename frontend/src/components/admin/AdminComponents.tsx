@@ -72,6 +72,7 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
 
   const handleRequalify = async () => {
     try {
+      console.log(`Requalifying team ${team.id}...`);
       const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/requalify`, {
         method: 'POST',
         headers: {
@@ -79,11 +80,18 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
         },
       });
 
+      const data = await res.json();
+      console.log('Requalify response:', data);
+
       if (res.ok) {
+        alert(`Team ${team.team_name} has been requalified. They need to logout and login again.`);
         onRefresh();
+      } else {
+        alert(`Failed to requalify: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Failed to requalify team:', error);
+      alert('Failed to requalify team. Check console for details.');
     }
   };
 
@@ -333,6 +341,7 @@ export const CreateTeamModal = ({ show, onClose, onSuccess }: any) => {
 export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
   const [timeAdjustment, setTimeAdjustment] = useState(0);
   const [scoreAdjustment, setScoreAdjustment] = useState(0);
+  const [newLevel, setNewLevel] = useState(team?.current_level || 1);
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -390,6 +399,30 @@ export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
     }
   };
 
+  const handleChangeLevel = async () => {
+    if (newLevel === team.current_level) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${adminToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ current_level: newLevel }),
+      });
+
+      if (res.ok) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to change level:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -414,6 +447,34 @@ export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
           </div>
 
           <div className="space-y-6">
+            {/* Level Change */}
+            <div className="border border-border p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-secondary" />
+                <h3 className="text-sm font-mono text-secondary">CHANGE LEVEL</h3>
+              </div>
+              <div className="space-y-2">
+                <select
+                  value={newLevel}
+                  onChange={(e) => setNewLevel(parseInt(e.target.value))}
+                  className="input-cyber w-full"
+                >
+                  <option value={1}>Level 1</option>
+                  <option value={2}>Level 2</option>
+                  <option value={3}>Level 3</option>
+                  <option value={4}>Level 4</option>
+                </select>
+                <button
+                  onClick={handleChangeLevel}
+                  disabled={loading || newLevel === team.current_level}
+                  className="w-full py-2 bg-secondary text-secondary-foreground font-mono hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Activity className="w-4 h-4" />
+                  SET LEVEL {newLevel}
+                </button>
+              </div>
+            </div>
+
             {/* Time Adjustment */}
             <div className="border border-border p-4">
               <div className="flex items-center gap-2 mb-3">

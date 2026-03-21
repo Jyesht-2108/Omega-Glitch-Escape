@@ -56,12 +56,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, team: "ZERO_DAY", time: "02:15:44" },
 ];
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, team: "Team Alpha", time: "02:15:30" },
-  { rank: 2, team: "Team Beta", time: "02:30:45" },
-  { rank: 3, team: "Team Gamma", time: "02:45:12" },
-];
-
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -190,13 +184,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Team disqualified: ${team.disqualified_reason || 'Anti-cheat violation'}`);
       }
       
+      // Clear ALL anti-cheat related localStorage when logging in
+      // This ensures requalified teams start fresh
+      localStorage.removeItem(`antiCheatStrikes_${team.id}`);
+      localStorage.removeItem(`antiCheat_strikes_${team.id}`);
+      localStorage.removeItem(`antiCheat_warning_${team.id}`);
+      localStorage.removeItem(`antiCheat_countdown_${team.id}`);
+      localStorage.removeItem(`antiCheat_canDismiss_${team.id}`);
+      localStorage.removeItem(`antiCheat_gameOver_${team.id}`);
+      
+      // Check if game is already completed
+      const isCompleted = !!team.completed_at;
+      
       setState(prev => ({ 
         ...prev, 
         teamName: team.team_name, 
         teamId: team.id,
         currentLevel: team.current_level,
+        score: team.score || 0,
         timerSeconds: team.time_remaining,
-        isLoggedIn: true 
+        isLoggedIn: true,
+        gameCompleted: isCompleted
       }));
 
       // Load leaderboard
@@ -407,27 +415,45 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Auto-save progress every 30 seconds
   useEffect(() => {
     if (!state.isLoggedIn || !state.teamId || state.gameCompleted) {
-      console.log('Auto-save disabled:', { 
-        isLoggedIn: state.isLoggedIn, 
-        hasTeamId: !!state.teamId, 
-        gameCompleted: state.gameCompleted 
-      });
       return;
     }
     
     console.log('Auto-save interval started');
     const interval = setInterval(async () => {
-      console.log('Auto-save triggered at', new Date().toLocaleTimeString());
-      // Use saveProgress function which has latest state
-      await saveProgress();
+      // Use a fresh state snapshot by calling setState with a function
+      setState(currentState => {
+        // Don't modify state, just use it for the save
+        if (!currentState.isLoggedIn || !currentState.teamId) return currentState;
+        
+        let stage = '';
+        if (currentState.currentLevel === 2) {
+          stage = currentState.level2Stage;
+        } else if (currentState.currentLevel === 3) {
+          stage = currentState.level3Stage;
+        } else if (currentState.currentLevel === 4) {
+          stage = currentState.level4Stage;
+        }
+
+        teamService.updateProgress({
+          current_level: currentState.currentLevel,
+          score: currentState.score,
+          time_remaining: currentState.timerSeconds,
+          stage: stage || undefined
+        }).catch(error => {
+          console.error('Auto-save failed:', error);
+        });
+        
+        return currentState; // Return unchanged state
+      });
     }, 30000);
     
     return () => {
       console.log('Auto-save interval cleared');
       clearInterval(interval);
     };
-  }, [state.isLoggedIn, state.teamId, state.gameCompleted, saveProgress]);
+  }, [state.isLoggedIn, state.teamId, state.gameCompleted]);
 
+  // Refresh leaderboard every 60 seconds
   // Refresh leaderboard every 60 seconds
   useEffect(() => {
     if (!state.isLoggedIn) return;
@@ -438,6 +464,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     return () => clearInterval(interval);
   }, [state.isLoggedIn, refreshLeaderboard]);
+
+  // Check team status every 10 seconds (for disqualification, reset, etc.)
+  useEffect(() => {
+    if (!state.isLoggedIn || !state.teamId) return;
+    
+    const checkStatus = async () => {
+      try {
+        const team = await teamService.getCurrentTeam();
+        
+        // If team was disqualified, force logout
+        if (team.is_disqualified) {
+          console.log('Team has been disqualified');
+          logout();
+          alert(`Your team has been disqualified: ${team.disqualified_reason || 'Anti-cheat violation'}`);
+          return;
+        }
+        
+        // If team was reset (level 1, score 0, time 10800), force logout to re-login
+        if (team.current_level === 1 && team.score === 0 && team.time_remaining === 10800 && state.currentLevel > 1) {
+          console.log('Team has been reset by admin');
+          logout();
+          alert('Your team has been reset by an administrator. Please login again to restart.');
+          return;
+        }
+        
+        // Only update level if it's higher (admin advanced) or lower (admin reset)
+        const shouldUpdateLevel = team.current_level > state.currentLevel || 
+                                  (team.current_level < state.currentLevel && team.score === 0);
+        
+        // Only update timer if there's a significant difference (>60 seconds)
+        // This indicates admin adjustment, not just sync drift
+        const timeDiff = Math.abs(team.time_remaining - state.timerSeconds);
+        const shouldUpdateTime = timeDiff > 60;
+        
+        // Update score from server (in case admin adjusted)
+        setState(prev => ({
+          ...prev,
+          score: team.score,
+          timerSeconds: shouldUpdateTime ? team.time_remaining : prev.timerSeconds,
+          currentLevel: shouldUpdateLevel ? team.current_level : prev.currentLevel,
+        }));
+      } catch (error) {
+        console.error('Failed to check team status:', error);
+      }
+    };
+    
+    const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [state.isLoggedIn, state.teamId, state.currentLevel, logout]);
 
   return (
     <GameContext.Provider value={{

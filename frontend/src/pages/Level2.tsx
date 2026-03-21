@@ -23,22 +23,29 @@ print(result)
 const Level2 = () => {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const { submitAnswer, addScore, setCurrentLevel, level2Stage, setLevel2Stage, startTimer } = useGame();
+  const { submitAnswer, level2Stage, setLevel2Stage, startTimer } = useGame();
 
   useEffect(() => { 
-    setCurrentLevel(2); 
+    // Level is already set by backend
     startTimer();
-  }, [setCurrentLevel, startTimer]);
+  }, [startTimer]);
 
-  const handleSubmit = () => {
-    if (submitAnswer(2, answer)) {
-      setFeedback('correct');
-      addScore(150);
-      // Move to stage 2 after solving Python puzzle
-      setTimeout(() => {
-        setLevel2Stage('base64');
-      }, 1500);
-    } else {
+  const handleSubmit = async () => {
+    try {
+      const result = await submitAnswer('2-python', answer);
+      if (result.correct) {
+        setFeedback('correct');
+        // Score already updated by backend
+        // Move to stage 2 after solving Python puzzle
+        setTimeout(() => {
+          setLevel2Stage('base64');
+        }, 1500);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }

@@ -66,58 +66,76 @@ const Level3 = () => {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [search, setSearch] = useState('');
 
-  const { submitAnswer, addScore, setCurrentLevel, level3Stage, setLevel3Stage, startTimer } = useGame();
+  const { submitAnswer, level3Stage, setLevel3Stage, startTimer } = useGame();
   const navigate = useNavigate();
   const dataset = useMemo(generateDataset, []);
 
   useEffect(() => {
-    setCurrentLevel(3);
+    // Level is already set by backend
     startTimer(); // Start timer when entering level
     // Reset to pointers stage when entering Level 3
     if (!level3Stage) {
       setLevel3Stage('pointers');
     }
     console.log('Level3 - current stage:', level3Stage);
-  }, [setCurrentLevel, level3Stage, setLevel3Stage, startTimer]);
+  }, [level3Stage, setLevel3Stage, startTimer]);
 
   const filtered = search ? dataset.filter(r =>
     r.id.includes(search) || r.model.includes(search) || r.status.includes(search.toUpperCase()) || r.confidence.includes(search)
   ) : dataset;
 
-  const handlePointerSubmit = () => {
-    if (submitAnswer('3-pointers', pointerAnswer)) {
-      setFeedback('correct');
-      addScore(100);
-      setTimeout(() => {
-        setLevel3Stage('stack');
-        setFeedback(null);
-      }, 1500);
-    } else {
+  const handlePointerSubmit = async () => {
+    try {
+      const result = await submitAnswer('3-pointers', pointerAnswer);
+      if (result.correct) {
+        setFeedback('correct');
+        setTimeout(() => {
+          setLevel3Stage('stack');
+          setFeedback(null);
+        }, 1500);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }
   };
 
-  const handleStackSubmit = () => {
-    if (submitAnswer('3-stack', stackAnswer)) {
-      setFeedback('correct');
-      addScore(100);
-      setTimeout(() => {
-        setLevel3Stage('dataset');
-        setFeedback(null);
-      }, 1500);
-    } else {
+  const handleStackSubmit = async () => {
+    try {
+      const result = await submitAnswer('3-stack', stackAnswer);
+      if (result.correct) {
+        setFeedback('correct');
+        setTimeout(() => {
+          setLevel3Stage('dataset');
+          setFeedback(null);
+        }, 1500);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }
   };
 
-  const handleDatasetSubmit = () => {
-    if (submitAnswer('3-dataset', datasetAnswer)) {
-      setFeedback('correct');
-      addScore(150);
-      setTimeout(() => navigate('/level3-complete'), 1500);
-    } else {
+  const handleDatasetSubmit = async () => {
+    try {
+      const result = await submitAnswer('3-dataset', datasetAnswer);
+      if (result.correct) {
+        setFeedback('correct');
+        setTimeout(() => navigate('/level3-complete'), 1500);
+      } else {
+        setFeedback('wrong');
+        setTimeout(() => setFeedback(null), 800);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 800);
     }
