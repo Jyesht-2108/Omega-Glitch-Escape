@@ -253,15 +253,22 @@ func (s *TeamService) DeleteTeam(ctx context.Context, teamID string) error {
 }
 
 func (s *TeamService) DisqualifyTeam(ctx context.Context, teamID string, reason string) error {
+	// Get current team to increment tab_switches
+	team, err := s.GetTeam(ctx, teamID)
+	if err != nil {
+		return err
+	}
+
 	updates := map[string]interface{}{
 		"is_disqualified":      true,
 		"disqualified_reason":  reason,
 		"disqualified_at":      time.Now(),
 		"is_active":            false,
+		"tab_switches":         team.TabSwitches + 1, // Increment tab switches
 		"updated_at":           time.Now(),
 	}
 
-	_, _, err := s.client.From("teams").
+	_, _, err = s.client.From("teams").
 		Update(updates, "", "").
 		Eq("id", teamID).
 		Execute()
