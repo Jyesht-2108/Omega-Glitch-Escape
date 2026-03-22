@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Zap, Trophy, AlertTriangle } from 'lucide-react';
+import { Clock, Zap, Trophy, AlertTriangle, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
 
 const formatTime = (s: number) => {
@@ -11,17 +12,61 @@ const formatTime = (s: number) => {
 };
 
 const HUD = () => {
-  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName } = useGame();
+  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName, level2Stage, level3Stage, level4Stage, logout } = useGame();
   const [showHint, setShowHint] = useState(false);
   const [hintText, setHintText] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const navigate = useNavigate();
 
-  const handleHintRequest = () => {
-    const hint = requestHint(currentLevel);
-    setHintText(hint);
-    setShowConfirm(false);
-    setShowHint(true);
-    setTimeout(() => setShowHint(false), 8000);
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleHintRequest = async () => {
+    let level;
+    
+    // Determine which hint to show based on level and stage
+    if (currentLevel === 2 && level2Stage === 'base64') {
+      level = '2-base64';
+    } else if (currentLevel === 3) {
+      // Level 3 has three stages
+      if (level3Stage === 'pointers') {
+        level = '3-pointers';
+      } else if (level3Stage === 'stack') {
+        level = '3-stack';
+      } else if (level3Stage === 'dataset') {
+        level = '3-dataset';
+      } else {
+        level = '3-pointers'; // Default to first stage
+      }
+    } else if (currentLevel === 4) {
+      // Level 4 has two stages
+      if (level4Stage === 'glitch') {
+        level = '4-glitch';
+      } else if (level4Stage === 'cipher') {
+        level = '4';
+      } else {
+        level = '4-glitch'; // Default to first stage
+      }
+    } else {
+      level = String(currentLevel);
+    }
+    
+    try {
+      const hint = await requestHint(level);
+      setHintText(hint);
+      setShowConfirm(false);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 15000); // Show for 15 seconds
+    } catch (error) {
+      console.error('Failed to get hint:', error);
+      setHintText('>> ERROR: Failed to retrieve hint');
+      setShowConfirm(false);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 5000);
+    }
   };
 
   return (
@@ -60,6 +105,18 @@ const HUD = () => {
             <AlertTriangle className="w-3 h-3 inline mr-1" />
             REQUEST OVERRIDE HINT
           </motion.button>
+
+          {/* Logout Button */}
+          <motion.button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="px-3 py-1 border border-destructive text-destructive text-xs font-mono hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Logout"
+          >
+            <LogOut className="w-3 h-3 inline mr-1" />
+            LOGOUT
+          </motion.button>
         </div>
 
         {/* Leaderboard ticker */}
@@ -86,12 +143,14 @@ const HUD = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
           >
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
               className="bg-card border border-accent p-6 max-w-md box-glow-red"
+              onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-accent text-lg font-bold mb-3 text-glow-amber">⚠ SYSTEM OVERRIDE WARNING</h3>
               <p className="text-muted-foreground text-sm mb-4">
@@ -103,6 +162,40 @@ const HUD = () => {
                 </button>
                 <button onClick={() => setShowConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
                   ABORT
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Logout confirm modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setShowLogoutConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="bg-card border border-destructive p-6 max-w-md box-glow-red"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-destructive text-lg font-bold mb-3 text-glow-red">⚠ LOGOUT CONFIRMATION</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Are you sure you want to logout? Your progress has been auto-saved, but the timer will stop.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={handleLogout} className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground font-mono text-sm hover:opacity-80 transition-opacity">
+                  CONFIRM LOGOUT
+                </button>
+                <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
+                  CANCEL
                 </button>
               </div>
             </motion.div>

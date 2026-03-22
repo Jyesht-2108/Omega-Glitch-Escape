@@ -17,5 +17,31 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Suppress MetaMask and other extension errors -->
+    <script>
+      // Suppress MetaMask extension errors (not related to our game)
+      window.addEventListener('error', function(e) {
+        if (e.message && (
+          e.message.includes('MetaMask') || 
+          e.message.includes('inpage.js') ||
+          e.filename && e.filename.includes('inpage.js')
+        )) {
+          e.preventDefault();
+          return true;
+        }
+      });
+      
+      // Suppress unhandled promise rejections from extensions
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && (
+          e.reason.message.includes('MetaMask') ||
+          e.reason.message.includes('extension not found')
+        )) {
+          e.preventDefault();
+          return true;
+        }
+      });
+    </script>
   </body>
 </html>

@@ -1,23 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
+import { authService } from '@/services/authService';
 import Typewriter from '@/components/Typewriter';
 import GlitchText from '@/components/GlitchText';
-import { Terminal, Lock } from 'lucide-react';
+import { Terminal, Lock, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [teamName, setTeamName] = useState('');
   const [password, setPassword] = useState('');
-  const { login, startTimer } = useGame();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, isLoggedIn, currentLevel, gameCompleted } = useGame();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (gameCompleted) {
+        navigate('/victory');
+      } else {
+        navigate(`/level/${currentLevel}`);
+      }
+    }
+  }, [isLoggedIn, currentLevel, gameCompleted, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (teamName.trim() && password.trim()) {
-      login(teamName, password);
-      startTimer();
-      navigate('/level/1');
+    setError('');
+    
+    if (!teamName.trim() || !password.trim()) {
+      setError('Please enter both team name and password');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Call real API
+      const response = await authService.login(teamName, password);
+      
+      // Update game context with login response
+      await login(teamName, password, response);
+      
+      // Check if game is completed
+      if (response.team.completed_at) {
+        navigate('/victory');
+      } else {
+        // Navigate to current level
+        navigate(`/level/${response.team.current_level}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+      setLoading(false);
     }
   };
 
@@ -64,14 +100,27 @@ const Login = () => {
               placeholder="••••••••"
             />
           </div>
+          
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive text-destructive text-sm"
+            >
+              <AlertCircle className="w-4 h-4" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+          
           <motion.button
             type="submit"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3 bg-primary text-primary-foreground font-mono font-bold tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            disabled={loading}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
+            className="w-full py-3 bg-primary text-primary-foreground font-mono font-bold tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Lock className="w-4 h-4" />
-            AUTHENTICATE
+            {loading ? 'AUTHENTICATING...' : 'AUTHENTICATE'}
           </motion.button>
         </form>
 
