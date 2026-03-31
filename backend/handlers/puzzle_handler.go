@@ -80,6 +80,13 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 	hintsUsed := 0
 
 	if len(existingProgress) > 0 {
+		// Prevent points farming on already completed puzzles
+		if existingProgress[0].CompletedAt != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Puzzle already completed",
+			})
+		}
+
 		// Update existing progress
 		progressID = existingProgress[0].ID
 		attemptsCount = existingProgress[0].AttemptsCount + 1
