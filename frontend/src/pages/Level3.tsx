@@ -8,17 +8,17 @@ import { Database, Code, Layers, Search, AlertCircle } from 'lucide-react';
 // C Pointer Code
 const C_CODE = `int main() {
     int arr[] = {10, 20, 30, 40, 50};
-    int *ptr = arr + 2;  // ptr points to arr[2] (30)
+    int *ptr = arr + 2;
     
-    ptr++;               // ptr now points to arr[3] (40)
-    int value = *ptr;    // value = 40
+    ptr++;
+    int value = *ptr;
     
-    ptr = ptr - 3;       // ptr now points to arr[0] (10)
-    value = *(ptr + 4);  // value = arr[4] (50)
+    ptr = ptr - 3;
+    value = *(ptr + 4);
     
-    value = value - 8;   // value = 50 - 8 = 42
+    value = value - 8;
     
-    return value;        // What is the final value?
+    return value;
 }`;
 
 // Stack Operations
@@ -184,13 +184,29 @@ const Level3 = () => {
                   {codeLines.map((line, i) => (
                     <div key={i} className="flex hover:bg-muted/20">
                       <span className="w-8 text-right pr-3 text-muted-foreground/50 select-none text-xs">{i + 1}</span>
-                      <code className={`${line.includes('//') ? 'text-muted-foreground italic' :
-                        line.includes('int ') || line.includes('return') ? 'text-accent' :
-                          line.includes('ptr') ? 'text-primary font-bold' :
-                            line.includes('value') ? 'text-secondary' :
-                              'text-foreground/80'
-                        }`}>
-                        {line}
+                      <code>
+                        {line.split(/([\s{}\[\]();,=+\-*]+)/).map((token, j) => {
+                          const trimmed = token.trim();
+                          let className = 'text-foreground/80';
+                          if (trimmed === 'int' || trimmed === 'return') {
+                            className = 'text-accent font-bold';
+                          } else if (trimmed === 'main') {
+                            className = 'text-primary font-bold';
+                          } else if (trimmed === 'ptr' || trimmed === '*ptr') {
+                            className = 'text-primary font-bold';
+                          } else if (trimmed === 'arr') {
+                            className = 'text-secondary font-bold';
+                          } else if (trimmed === 'value') {
+                            className = 'text-secondary';
+                          } else if (/^\d+$/.test(trimmed)) {
+                            className = 'text-accent';
+                          } else if (['=', '+', '-', '*', '++'].includes(trimmed)) {
+                            className = 'text-destructive font-bold';
+                          } else if (['{', '}', '[', ']', '(', ')', ';', ','].includes(trimmed)) {
+                            className = 'text-muted-foreground';
+                          }
+                          return <span key={j} className={className}>{token}</span>;
+                        })}
                       </code>
                     </div>
                   ))}
@@ -278,7 +294,6 @@ const Level3 = () => {
                       <div className="text-xs space-y-1">
                         <div>• Start with an empty stack</div>
                         <div>• Execute each operation in order</div>
-                        <div>• PUSH adds to top, POP removes from top</div>
                         <div>• Find the final stack state (top to bottom)</div>
                       </div>
                     </div>
@@ -335,7 +350,7 @@ const Level3 = () => {
                 <AlertCircle className="w-4 h-4 text-accent mt-0.5" />
                 <div className="text-sm text-accent/90">
                   <div className="font-bold mb-1">CHALLENGE:</div>
-                  <div className="text-xs">Find the poisoned data point. AI confidence scores must be between 0.0 and 1.0. Any value exceeding 1.0 is mathematically impossible.</div>
+                  <div className="text-xs">Find the poisoned data point. AI confidence scores must be between (Request for hint to know more). Any value exceeding (Request for hint to know more) is mathematically impossible.</div>
                 </div>
               </div>
             </div>
