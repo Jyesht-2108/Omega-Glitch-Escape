@@ -165,7 +165,7 @@ const HUD = () => {
               </p>
               <div className="flex gap-3">
                 <button onClick={handleHintRequest} className="flex-1 px-4 py-2 bg-accent text-accent-foreground font-mono text-sm hover:opacity-80 transition-opacity">
-                  CONFIRM [-05:00]
+                  CONFIRM [-05{':'}00]
                 </button>
                 <button onClick={() => setShowConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
                   ABORT
