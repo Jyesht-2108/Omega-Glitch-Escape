@@ -121,17 +121,24 @@ const HUD = () => {
 
         {/* Leaderboard ticker */}
         <div className="overflow-hidden border-t border-border/50 py-1">
-          <motion.div
-            className="flex gap-8 whitespace-nowrap text-xs text-muted-foreground px-4"
-            animate={{ x: [0, -600] }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          >
-            {[...leaderboard, ...leaderboard].map((entry, i) => (
-              <span key={i}>
-                <span className="text-accent">#{entry.rank}</span> {entry.team} <span className="text-primary">{entry.time}</span>
-              </span>
-            ))}
-          </motion.div>
+          {leaderboard.length > 0 ? (
+            <motion.div
+              key={leaderboard.map(e => `${e.team}-${e.time}`).join(',')}
+              className="flex gap-8 whitespace-nowrap text-xs text-muted-foreground px-4"
+              animate={{ x: [0, -800] }}
+              transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+            >
+              {[...leaderboard, ...leaderboard, ...leaderboard].map((entry, i) => (
+                <span key={i}>
+                  <span className="text-accent">#{entry.rank}</span> {entry.team} <span className="text-primary">{entry.time}</span>
+                </span>
+              ))}
+            </motion.div>
+          ) : (
+            <div className="text-xs text-muted-foreground/50 px-4 text-center font-mono">
+              Loading leaderboard...
+            </div>
+          )}
         </div>
       </div>
 

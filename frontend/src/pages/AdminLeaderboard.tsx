@@ -69,9 +69,9 @@ const AdminLeaderboard = () => {
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-6 h-6 text-yellow-400" />;
-    if (rank === 2) return <Medal className="w-6 h-6 text-gray-400" />;
-    if (rank === 3) return <Award className="w-6 h-6 text-amber-600" />;
+    if (rank === 1) return <div className="flex flex-col items-center"><Crown className="w-4 h-4 text-yellow-400 mb-0.5" /><span className="text-[10px] leading-none font-bold text-yellow-400">1ST</span></div>;
+    if (rank === 2) return <div className="flex flex-col items-center"><Medal className="w-4 h-4 text-gray-400 mb-0.5" /><span className="text-[10px] leading-none font-bold text-gray-300">2ND</span></div>;
+    if (rank === 3) return <div className="flex flex-col items-center"><Award className="w-4 h-4 text-amber-600 mb-0.5" /><span className="text-[10px] leading-none font-bold text-amber-500">3RD</span></div>;
     return <span className="text-lg font-bold text-muted-foreground">#{rank}</span>;
   };
 
@@ -125,11 +125,11 @@ const AdminLeaderboard = () => {
           </motion.button>
         </div>
 
-        {/* Ranking Formula Info */}
+        {/* Rank Score Formula Info */}
         <div className="border border-accent bg-card p-4 mb-6 box-glow-green">
           <div className="flex items-center gap-2 mb-3">
             <Star className="w-5 h-5 text-accent" />
-            <h2 className="text-lg font-mono text-accent">RANKING FORMULA</h2>
+            <h2 className="text-lg font-mono text-accent">RANK SCORE FORMULA</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-mono">
             <div>
@@ -227,7 +227,7 @@ const AdminLeaderboard = () => {
                   <th className="px-4 py-3 text-left text-xs font-mono text-muted-foreground">HINTS</th>
                   <th className="px-4 py-3 text-left text-xs font-mono text-muted-foreground">WRONG</th>
                   <th className="px-4 py-3 text-left text-xs font-mono text-muted-foreground">FLAGS</th>
-                  <th className="px-4 py-3 text-left text-xs font-mono text-muted-foreground">RANKING</th>
+                  <th className="px-4 py-3 text-left text-xs font-mono text-muted-foreground">RANK SCORE</th>
                 </tr>
               </thead>
               <tbody>

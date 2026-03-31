@@ -25,7 +25,7 @@ const Level2 = () => {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const { submitAnswer, level2Stage, setLevel2Stage, startTimer } = useGame();
 
-  useEffect(() => { 
+  useEffect(() => {
     // Level is already set by backend
     startTimer();
   }, [startTimer]);
@@ -67,9 +67,9 @@ const Level2 = () => {
         </div>
 
         <div className="text-sm text-primary/70 mb-6">
-          <Typewriter 
-            text=">> AUTOMATED DEFENSE SCRIPTS DETECTED. OMEGA has corrupted the bypass script. Debug the code mentally and determine the output..." 
-            speed={20} 
+          <Typewriter
+            text=">> AUTOMATED DEFENSE SCRIPTS DETECTED. OMEGA has corrupted the bypass script. Debug the code mentally and determine the output..."
+            speed={20}
           />
         </div>
 
@@ -92,15 +92,14 @@ const Level2 = () => {
               {lines.map((line, i) => (
                 <div key={i} className="flex hover:bg-muted/20">
                   <span className="w-8 text-right pr-3 text-muted-foreground/50 select-none text-xs">{i + 1}</span>
-                  <code className={`${
-                    line.includes('BUG') ? 'text-destructive font-bold' :
+                  <code className={`${line.includes('BUG') ? 'text-destructive font-bold' :
                     line.includes('#') && !line.includes('BUG') ? 'text-muted-foreground italic' :
-                    line.includes('def ') ? 'text-primary font-bold' :
-                    line.includes('return') || line.includes('for') || line.includes('print') ? 'text-accent' :
-                    line.includes('"') || line.includes("'") ? 'text-secondary' :
-                    line.includes('codes') || line.includes('token') || line.includes('result') ? 'text-foreground' :
-                    'text-foreground/80'
-                  }`}>
+                      line.includes('def ') ? 'text-primary font-bold' :
+                        line.includes('return') || line.includes('for') || line.includes('print') ? 'text-accent' :
+                          line.includes('"') || line.includes("'") ? 'text-secondary' :
+                            line.includes('codes') || line.includes('token') || line.includes('result') ? 'text-foreground' :
+                              'text-foreground/80'
+                    }`}>
                     {line}
                   </code>
                 </div>
@@ -116,9 +115,7 @@ const Level2 = () => {
             <div className="text-sm text-accent/90">
               <div className="font-bold mb-1">DEBUGGING CHALLENGE:</div>
               <div className="text-xs space-y-1">
-                <div>• The code has an off-by-one error in the loop</div>
                 <div>• Trace through the code manually to find what it ACTUALLY outputs</div>
-                <div>• The password is "BYPASS" but the loop doesn't process all characters</div>
               </div>
             </div>
           </div>
@@ -145,11 +142,10 @@ const Level2 = () => {
               onClick={handleSubmit}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`px-6 py-2 font-mono font-bold transition-colors ${
-                feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
+              className={`px-6 py-2 font-mono font-bold transition-colors ${feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
                 feedback === 'wrong' ? 'bg-destructive text-destructive-foreground' :
-                'bg-primary text-primary-foreground hover:opacity-90'
-              }`}
+                  'bg-primary text-primary-foreground hover:opacity-90'
+                }`}
             >
               SUBMIT
             </motion.button>
@@ -181,9 +177,9 @@ const Level2 = () => {
 
         <AnimatePresence>
           {feedback === 'correct' && level2Stage === 'python' && (
-            <motion.div 
-              initial={{ scale: 0 }} 
-              animate={{ scale: 1 }} 
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
               exit={{ scale: 0 }}
               className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
             >

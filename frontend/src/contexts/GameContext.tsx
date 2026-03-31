@@ -48,13 +48,7 @@ interface GameContextType extends GameState {
   completeGame: () => void;
 }
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, team: "CIPHER_LORDS", time: "01:23:45" },
-  { rank: 2, team: "NULL_BYTE", time: "01:45:12" },
-  { rank: 3, team: "STACK_OVERFLOW", time: "01:52:33" },
-  { rank: 4, team: "ROOT_ACCESS", time: "02:01:07" },
-  { rank: 5, team: "ZERO_DAY", time: "02:15:44" },
-];
+const EMPTY_LEADERBOARD: LeaderboardEntry[] = [];
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -74,7 +68,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           timerSeconds: parsed.timerSeconds || 3 * 60 * 60,
           isTimerRunning: false, // Always start with timer stopped
           hints: parsed.hints || [],
-          leaderboard: MOCK_LEADERBOARD,
+          leaderboard: EMPTY_LEADERBOARD,
           level2Stage: parsed.level2Stage || 'python',
           level3Stage: parsed.level3Stage || 'pointers',
           level4Stage: parsed.level4Stage || 'glitch',
@@ -90,7 +84,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           timerSeconds: 3 * 60 * 60,
           isTimerRunning: false,
           hints: [],
-          leaderboard: MOCK_LEADERBOARD,
+          leaderboard: EMPTY_LEADERBOARD,
           level2Stage: 'python',
           level3Stage: 'pointers',
           level4Stage: 'glitch',
@@ -107,7 +101,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timerSeconds: 3 * 60 * 60,
       isTimerRunning: false,
       hints: [],
-      leaderboard: MOCK_LEADERBOARD,
+      leaderboard: EMPTY_LEADERBOARD,
       level2Stage: 'python',
       level3Stage: 'pointers',
       level4Stage: 'glitch',
@@ -226,7 +220,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timerSeconds: 3 * 60 * 60,
       isTimerRunning: false,
       hints: [],
-      leaderboard: MOCK_LEADERBOARD,
+      leaderboard: EMPTY_LEADERBOARD,
       level2Stage: 'python',
       level3Stage: 'pointers',
       level4Stage: 'glitch',
@@ -288,6 +282,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentLevel: response.current_level,
       }));
 
+      // Refresh leaderboard after a correct answer (level advancement)
+      if (response.correct) {
+        refreshLeaderboard();
+      }
+
       return {
         correct: response.correct,
         message: response.message,
@@ -299,7 +298,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: error.message || '>> ERROR: Failed to validate answer',
       };
     }
-  }, []);
+  }, [refreshLeaderboard]);
 
   const requestHint = useCallback(async (level: string): Promise<string> => {
     try {
@@ -395,7 +394,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timerSeconds: 3 * 60 * 60,
       isTimerRunning: false,
       hints: [],
-      leaderboard: MOCK_LEADERBOARD,
+      leaderboard: EMPTY_LEADERBOARD,
       level2Stage: 'python',
       level3Stage: 'pointers',
       level4Stage: 'glitch',
@@ -453,14 +452,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [state.isLoggedIn, state.teamId, state.gameCompleted]);
 
-  // Refresh leaderboard every 60 seconds
-  // Refresh leaderboard every 60 seconds
+  // Fetch leaderboard immediately on login and refresh every 30 seconds
   useEffect(() => {
     if (!state.isLoggedIn) return;
     
+    // Fetch immediately
+    refreshLeaderboard();
+    
     const interval = setInterval(() => {
       refreshLeaderboard();
-    }, 60000);
+    }, 30000);
     
     return () => clearInterval(interval);
   }, [state.isLoggedIn, refreshLeaderboard]);
