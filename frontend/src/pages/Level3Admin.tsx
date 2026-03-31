@@ -53,20 +53,19 @@ const Level3Admin = () => {
         <div className="text-xs text-muted-foreground animate-flicker mb-6">
           ▸ THIS ACCESS HAS BEEN LOGGED ◂
         </div>
-        
+
         <motion.button
           onClick={handleProceed}
           disabled={!submitted}
           whileHover={{ scale: submitted ? 1.05 : 1 }}
           whileTap={{ scale: submitted ? 0.95 : 1 }}
-          className={`px-6 py-3 bg-secondary text-secondary-foreground font-mono font-bold transition-opacity flex items-center gap-2 mx-auto ${
-            submitted ? 'hover:opacity-90 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-          }`}
+          className={`px-6 py-3 bg-secondary text-secondary-foreground font-mono font-bold transition-opacity flex items-center gap-2 mx-auto ${submitted ? 'hover:opacity-90 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+            }`}
         >
           {submitted ? 'PROCEED TO LEVEL 3' : 'PROCESSING...'}
           <ArrowRight className="w-4 h-4" />
         </motion.button>
-        
+
         {submitted && currentLevel < 3 && (
           <p className="text-xs text-destructive mt-2">Waiting for level update...</p>
         )}
