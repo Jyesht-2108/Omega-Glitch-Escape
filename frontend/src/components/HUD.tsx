@@ -12,11 +12,13 @@ const formatTime = (s: number) => {
 };
 
 const HUD = () => {
-  const { timerSeconds, currentLevel, score, leaderboard, requestHint, teamName, level2Stage, level3Stage, level4Stage, logout } = useGame();
+  const { timerSeconds, currentLevel, score, leaderboard, requestHint, getHintInfo, teamName, level2Stage, level3Stage, level4Stage, logout } = useGame();
   const [showHint, setShowHint] = useState(false);
   const [hintText, setHintText] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoadingHint, setIsLoadingHint] = useState(false);
+  const [hintInfo, setHintInfo] = useState<{ timeCost: number; ptsCost: number; level: number; maxReached: boolean; purchased: string[] } | null>(null);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -24,38 +26,43 @@ const HUD = () => {
     navigate('/');
   };
 
-  const handleHintRequest = async () => {
-    let level;
-    
-    // Determine which hint to show based on level and stage
-    if (currentLevel === 2 && level2Stage === 'base64') {
-      level = '2-base64';
-    } else if (currentLevel === 3) {
-      // Level 3 has three stages
-      if (level3Stage === 'pointers') {
-        level = '3-pointers';
-      } else if (level3Stage === 'stack') {
-        level = '3-stack';
-      } else if (level3Stage === 'dataset') {
-        level = '3-dataset';
-      } else {
-        level = '3-pointers'; // Default to first stage
-      }
-    } else if (currentLevel === 4) {
-      // Level 4 has two stages
-      if (level4Stage === 'glitch') {
-        level = '4-glitch';
-      } else if (level4Stage === 'cipher') {
-        level = '4';
-      } else {
-        level = '4-glitch'; // Default to first stage
-      }
-    } else {
-      level = String(currentLevel);
+  const getCurrentLevelString = () => {
+    if (currentLevel === 2 && level2Stage === 'base64') return '2-base64';
+    if (currentLevel === 3) return level3Stage === 'pointers' ? '3-pointers' : level3Stage === 'stack' ? '3-stack' : '3-dataset';
+    if (currentLevel === 4) return level4Stage === 'glitch' ? '4-glitch' : '4';
+    return String(currentLevel);
+  };
+
+  const handleRequestHintClick = async () => {
+    if (isLoadingHint) return;
+    setIsLoadingHint(true);
+    try {
+      const levelId = getCurrentLevelString();
+      const info = await getHintInfo(levelId);
+      
+      setHintInfo({
+        timeCost: info.next_hint_time_cost,
+        ptsCost: info.next_hint_pts_cost,
+        level: info.hints_used + 1,
+        maxReached: info.max_hints_reached,
+        purchased: info.purchased_hints || []
+      });
+      setShowConfirm(true);
+    } catch (err) {
+      console.error('Failed to get hint info', err);
+      // Fallback
+      setHintInfo({ timeCost: 300, ptsCost: 0, level: 1, maxReached: false, purchased: [] });
+      setShowConfirm(true);
+    } finally {
+      setIsLoadingHint(false);
     }
+  };
+
+  const handleHintRequest = async () => {
+    const levelId = getCurrentLevelString();
     
     try {
-      const hint = await requestHint(level);
+      const hint = await requestHint(levelId);
       setHintText(hint);
       setShowConfirm(false);
       setShowHint(true);
@@ -97,13 +104,14 @@ const HUD = () => {
 
           {/* Hint Button */}
           <motion.button
-            onClick={() => setShowConfirm(true)}
-            className="px-3 py-1 border border-accent text-accent text-xs font-mono animate-pulse-glow hover:bg-accent hover:text-accent-foreground transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            onClick={handleRequestHintClick}
+            disabled={isLoadingHint}
+            className={`px-3 py-1 border border-accent text-accent text-xs font-mono animate-pulse-glow hover:bg-accent hover:text-accent-foreground transition-colors ${isLoadingHint ? 'opacity-50 cursor-not-allowed animate-none' : ''}`}
+            whileHover={{ scale: isLoadingHint ? 1 : 1.05 }}
+            whileTap={{ scale: isLoadingHint ? 1 : 0.95 }}
           >
             <AlertTriangle className="w-3 h-3 inline mr-1" />
-            REQUEST OVERRIDE HINT
+            {isLoadingHint ? "ANALYZING..." : "REQUEST OVERRIDE HINT"}
           </motion.button>
 
           {/* Logout Button */}
@@ -159,18 +167,49 @@ const HUD = () => {
               className="bg-card border border-accent p-6 max-w-md box-glow-red"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-accent text-lg font-bold mb-3 text-glow-amber">⚠ SYSTEM OVERRIDE WARNING</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Requesting a hint will deduct <span className="text-destructive font-bold">5 MINUTES</span> from your remaining time. This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button onClick={handleHintRequest} className="flex-1 px-4 py-2 bg-accent text-accent-foreground font-mono text-sm hover:opacity-80 transition-opacity">
-                  CONFIRM [-05{':'}00]
-                </button>
-                <button onClick={() => setShowConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
-                  ABORT
-                </button>
-              </div>
+              {hintInfo?.maxReached ? (
+                <>
+                  <h3 className="text-accent text-lg font-bold mb-3 text-glow-amber">⚠ MAXIMUM OVERRIDE REACHED</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    You have already decrypted maximum hints for this sector. No more clues are available.
+                  </p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
+                      CLOSE
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-accent text-lg font-bold mb-3 text-glow-amber">⚠ SYSTEM OVERRIDE WARNING</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Requesting <span className="text-accent font-bold">LEVEL {hintInfo?.level} OVERRIDE HINT</span> will deduct <span className="text-destructive font-bold">{hintInfo ? Math.floor(hintInfo.timeCost / 60) : 0} MINUTES</span> and <span className="text-destructive font-bold">{hintInfo?.ptsCost} POINTS</span> from your team score. This action cannot be undone.
+                  </p>
+                  <div className="flex gap-3">
+                    <button onClick={handleHintRequest} className="flex-1 px-4 py-2 bg-accent text-accent-foreground font-mono text-sm hover:opacity-80 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis">
+                      CONFIRM [-{hintInfo ? String(Math.floor(hintInfo.timeCost / 60)).padStart(2, '0') : '00'}:00 / -{hintInfo?.ptsCost} PTS]
+                    </button>
+                    <button onClick={() => setShowConfirm(false)} className="flex-1 px-4 py-2 border border-border text-muted-foreground font-mono text-sm hover:bg-muted transition-colors">
+                      ABORT
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Purchased Hints Dispaly */}
+              {hintInfo?.purchased && hintInfo.purchased.length > 0 && (
+                <div className="mt-4 border-t border-border pt-4">
+                  <div className="text-xs text-muted-foreground mb-2">PREVIOUSLY DECRYPTED CLUES:</div>
+                  <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                    {hintInfo.purchased.map((hint, i) => (
+                      <div key={i} className="text-accent text-xs border border-accent/30 bg-accent/10 p-2 font-mono break-words rounded">
+                        <span className="opacity-50 font-bold mr-2">[{i + 1}]</span>
+                        {hint}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

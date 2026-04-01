@@ -50,6 +50,7 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	puzzle.Use(middleware.AuthRequired(cfg))
 	puzzle.Post("/submit", puzzleHandler.SubmitAnswer)
 	puzzle.Post("/hint", puzzleHandler.RequestHint)
+	puzzle.Get("/hint-info/:level", puzzleHandler.GetHintInfo)
 
 	// Leaderboard (public)
 	api.Get("/leaderboard", teamHandler.GetLeaderboard)
