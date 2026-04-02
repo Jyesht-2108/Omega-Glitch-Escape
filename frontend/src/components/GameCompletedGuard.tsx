@@ -8,9 +8,11 @@ export const GameCompletedGuard: React.FC<{ children: React.ReactNode }> = ({ ch
   const location = useLocation();
 
   useEffect(() => {
-    // If game is completed and user tries to access a level, redirect to victory
+    console.log(`GameCompletedGuard: gameCompleted=${gameCompleted}, pathname=${location.pathname}`);
+    
+    // If game is completed, redirect to victory from any level page
     if (gameCompleted && location.pathname.startsWith('/level')) {
-      console.log('Game completed - redirecting to victory page');
+      console.log('🎯 Game completed - redirecting to victory page');
       navigate('/victory', { replace: true });
     }
   }, [gameCompleted, location.pathname, navigate]);

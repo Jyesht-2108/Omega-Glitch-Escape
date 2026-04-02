@@ -53,6 +53,13 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check if time has expired
+	if team.TimeRemaining <= 0 {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Time has expired",
+		})
+	}
+
 	// Normalize answer
 	submittedAnswer := strings.ToUpper(strings.TrimSpace(req.Answer))
 	correctAnswer := strings.ToUpper(strings.TrimSpace(models.PuzzleAnswers[req.Level]))
@@ -212,6 +219,20 @@ func (h *PuzzleHandler) RequestHint(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Team not found",
+		})
+	}
+
+	// Check if game is completed
+	if team.CompletedAt != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Game already completed",
+		})
+	}
+
+	// Check if time has expired
+	if team.TimeRemaining <= 0 {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Time has expired",
 		})
 	}
 

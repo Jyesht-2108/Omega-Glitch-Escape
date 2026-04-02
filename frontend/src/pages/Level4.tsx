@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
+import { teamService } from '@/services/teamService';
 import Typewriter from '@/components/Typewriter';
 import GlitchText from '@/components/GlitchText';
 import { Skull, AlertTriangle, Eye, Zap, FileImage } from 'lucide-react';
@@ -142,7 +143,7 @@ const Level4 = () => {
   const [showImageInspector, setShowImageInspector] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   
-  const { submitAnswer, stopTimer, level4Stage, setLevel4Stage, startTimer } = useGame();
+  const { submitAnswer, stopTimer, level4Stage, setLevel4Stage, startTimer, completeGame, score, timerSeconds } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => { 
@@ -153,6 +154,25 @@ const Level4 = () => {
       setLevel4Stage('glitch');
     }
   }, [level4Stage, setLevel4Stage, startTimer]);
+
+  const handleTimeout = async () => {
+    setTimedOut(true);
+    stopTimer();
+    completeGame();
+    
+    // Call backend to mark game as completed due to Level 4 timeout
+    try {
+      await teamService.completeGame({
+        final_score: score,
+        time_remaining: timerSeconds
+      });
+    } catch (error) {
+      console.error('Failed to submit Level 4 timeout completion:', error);
+    }
+    
+    // Navigate to victory page after showing timeout message
+    setTimeout(() => navigate('/victory'), 3000);
+  };
 
   const handleGlitchSubmit = async () => {
     try {
@@ -221,7 +241,7 @@ const Level4 = () => {
             />
           </div>
 
-          <CountdownTimer onTimeout={() => setTimedOut(true)} />
+          <CountdownTimer onTimeout={handleTimeout} />
 
           {/* Sub-Puzzle 1: Glitch Image */}
           {(level4Stage === 'glitch' || !level4Stage) && (

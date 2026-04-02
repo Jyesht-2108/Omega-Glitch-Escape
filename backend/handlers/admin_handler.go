@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -556,6 +557,11 @@ func (h *AdminHandler) GetAdvancedLeaderboard(c *fiber.Ctx) error {
 			totalHints += p.HintsUsed
 			totalAttempts += p.AttemptsCount
 			totalWrongAttempts += p.WrongAttempts
+		}
+
+		// Debug: Log if hint count seems excessive
+		if totalHints > 30 {
+			fmt.Printf("WARNING: Team %s has %d total hints (max expected: 30)\n", team.TeamName, totalHints)
 		}
 
 		timeElapsed := 10800 - team.TimeRemaining

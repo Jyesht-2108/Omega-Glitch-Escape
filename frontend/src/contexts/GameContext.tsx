@@ -134,10 +134,48 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (state.isTimerRunning && state.timerSeconds > 0) {
       timerRef.current = setInterval(() => {
-        setState(prev => ({ ...prev, timerSeconds: prev.timerSeconds - 1 }));
+        setState(prev => {
+          const newTime = prev.timerSeconds - 1;
+          console.log(`Timer tick: ${newTime} seconds remaining`);
+          
+          if (newTime <= 0) {
+            // Timer reached zero - end the game
+            console.log('🚨 TIMER REACHED ZERO - ENDING GAME 🚨');
+
+            // Call backend to mark game as completed due to timeout
+            if (prev.isLoggedIn && prev.teamId) {
+              console.log('Calling backend to complete game due to timeout');
+              teamService.completeGame({
+                final_score: prev.score,
+                time_remaining: 0
+              }).catch(error => {
+                console.error('Failed to submit timeout completion:', error);
+              });
+            }
+
+            return {
+              ...prev,
+              timerSeconds: 0,
+              isTimerRunning: false,
+              gameCompleted: true
+            };
+          }
+          return { ...prev, timerSeconds: newTime };
+        });
       }, 1000);
+    } else {
+      // Clear timer if not running or time is 0
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => { 
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [state.isTimerRunning, state.timerSeconds]);
 
   // Helper function to format time
@@ -156,7 +194,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         team: entry.team_name,
         time: entry.time_elapsed
       }));
-      
+
       setState(prev => ({ ...prev, leaderboard: formattedLeaderboard }));
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
@@ -169,16 +207,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!data) {
         data = await authService.login(teamName, password);
       }
-      
+
       console.log('Login data received:', data);
       const team = data.team;
       console.log('Team data:', team);
-      
+
       // Check if team is disqualified
       if (team.is_disqualified) {
         throw new Error(`Team disqualified: ${team.disqualified_reason || 'Anti-cheat violation'}`);
       }
-      
+
       // Clear ALL anti-cheat related localStorage when logging in
       // This ensures requalified teams start fresh
       localStorage.removeItem(`antiCheatStrikes_${team.id}`);
@@ -187,20 +225,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(`antiCheat_countdown_${team.id}`);
       localStorage.removeItem(`antiCheat_canDismiss_${team.id}`);
       localStorage.removeItem(`antiCheat_gameOver_${team.id}`);
-      
+
       // Check if game is already completed
       const isCompleted = !!team.completed_at;
       
-      setState(prev => ({ 
-        ...prev, 
-        teamName: team.team_name, 
+      // Check if time has expired
+      const timeExpired = team.time_remaining <= 0;
+
+      setState(prev => ({
+        ...prev,
+        teamName: team.team_name,
         teamId: team.id,
         currentLevel: team.current_level,
         score: team.score || 0,
         timerSeconds: team.time_remaining,
         isLoggedIn: true,
-        gameCompleted: isCompleted
+        gameCompleted: isCompleted || timeExpired
       }));
+
+      // If time expired, show message
+      if (timeExpired && !isCompleted) {
+        console.log('🚨 Team time has expired during login');
+        alert('Your team\'s time has expired. The game has ended.');
+      }
 
       // Load leaderboard
       await refreshLeaderboard();
@@ -274,7 +321,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const submitAnswer = useCallback(async (level: string, answer: string): Promise<{ correct: boolean; message: string }> => {
     try {
       const response = await puzzleService.submitAnswer(level, answer);
-      
+
       // Update local state with backend response
       setState(prev => ({
         ...prev,
@@ -304,7 +351,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const requestHint = useCallback(async (level: string): Promise<string> => {
     try {
       const response = await puzzleService.requestHint(level);
-      
+
       // Update local state with new time and score
       setState(prev => ({
         ...prev,
@@ -345,7 +392,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Save progress skipped - not logged in or no team ID');
       return;
     }
-    
+
     try {
       // Construct stage string based on current level
       let stage = '';
@@ -370,7 +417,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         time_remaining: state.timerSeconds,
         stage: stage || undefined
       });
-      
+
       console.log('Progress saved successfully');
     } catch (error) {
       console.error('Failed to save progress:', error);
@@ -379,7 +426,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadProgress = useCallback(async () => {
     if (!state.isLoggedIn || !state.teamId) return;
-    
+
     try {
       const team = await teamService.getTeam();
       if (team) {
@@ -414,27 +461,32 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const completeGame = useCallback(() => {
-    console.log('Game marked as completed');
-    setState(prev => ({ 
-      ...prev, 
+    console.log('🎯 completeGame() called - marking game as completed');
+    setState(prev => ({
+      ...prev,
       gameCompleted: true,
       isTimerRunning: false // Stop timer
     }));
   }, []);
+
+  // Debug: Monitor gameCompleted changes
+  useEffect(() => {
+    console.log(`🎯 gameCompleted changed to: ${state.gameCompleted}`);
+  }, [state.gameCompleted]);
 
   // Auto-save progress every 30 seconds
   useEffect(() => {
     if (!state.isLoggedIn || !state.teamId || state.gameCompleted) {
       return;
     }
-    
+
     console.log('Auto-save interval started');
     const interval = setInterval(async () => {
       // Use a fresh state snapshot by calling setState with a function
       setState(currentState => {
         // Don't modify state, just use it for the save
         if (!currentState.isLoggedIn || !currentState.teamId) return currentState;
-        
+
         let stage = '';
         if (currentState.currentLevel === 2) {
           stage = currentState.level2Stage;
@@ -452,11 +504,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }).catch(error => {
           console.error('Auto-save failed:', error);
         });
-        
+
         return currentState; // Return unchanged state
       });
     }, 30000);
-    
+
     return () => {
       console.log('Auto-save interval cleared');
       clearInterval(interval);
@@ -466,25 +518,25 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fetch leaderboard immediately on login and refresh every 30 seconds
   useEffect(() => {
     if (!state.isLoggedIn) return;
-    
+
     // Fetch immediately
     refreshLeaderboard();
-    
+
     const interval = setInterval(() => {
       refreshLeaderboard();
     }, 30000);
-    
+
     return () => clearInterval(interval);
   }, [state.isLoggedIn, refreshLeaderboard]);
 
   // Check team status every 10 seconds (for disqualification, reset, etc.)
   useEffect(() => {
     if (!state.isLoggedIn || !state.teamId) return;
-    
+
     const checkStatus = async () => {
       try {
         const team = await teamService.getCurrentTeam();
-        
+
         // If team was disqualified, force logout
         if (team.is_disqualified) {
           console.log('Team has been disqualified');
@@ -492,7 +544,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           alert(`Your team has been disqualified: ${team.disqualified_reason || 'Anti-cheat violation'}`);
           return;
         }
-        
+
         // If team was reset (level 1, score 0, time 10800), force logout to re-login
         if (team.current_level === 1 && team.score === 0 && team.time_remaining === 10800 && state.currentLevel > 1) {
           console.log('Team has been reset by admin');
@@ -500,16 +552,37 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           alert('Your team has been reset by an administrator. Please login again to restart.');
           return;
         }
-        
+
+        // 🚨 CRITICAL: If backend shows time_remaining = 0, end the game immediately
+        if (team.time_remaining <= 0 && !state.gameCompleted) {
+          console.log('🚨 Backend shows time expired - ending game immediately');
+          setState(prev => ({
+            ...prev,
+            timerSeconds: 0,
+            isTimerRunning: false,
+            gameCompleted: true
+          }));
+          return;
+        }
+
         // Only update level if it's higher (admin advanced) or lower (admin reset)
-        const shouldUpdateLevel = team.current_level > state.currentLevel || 
-                                  (team.current_level < state.currentLevel && team.score === 0);
-        
+        const shouldUpdateLevel = team.current_level > state.currentLevel ||
+          (team.current_level < state.currentLevel && team.score === 0);
+
         // Only update timer if there's a significant difference (>60 seconds)
         // This indicates admin adjustment, not just sync drift
+        // BUT don't override if local timer has reached 0 (game ended)
         const timeDiff = Math.abs(team.time_remaining - state.timerSeconds);
-        const shouldUpdateTime = timeDiff > 60;
-        
+        const shouldUpdateTime = timeDiff > 60 && state.timerSeconds > 0;
+
+        console.log(`Team status check: server_time=${team.time_remaining}, local_time=${state.timerSeconds}, diff=${timeDiff}, shouldUpdate=${shouldUpdateTime}, gameCompleted=${state.gameCompleted}`);
+
+        // Don't update anything if game is already completed
+        if (state.gameCompleted) {
+          console.log('Game already completed, skipping team status update');
+          return;
+        }
+
         // Update score from server (in case admin adjusted)
         setState(prev => ({
           ...prev,
@@ -521,29 +594,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Failed to check team status:', error);
       }
     };
-    
+
     const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
     return () => clearInterval(interval);
   }, [state.isLoggedIn, state.teamId, state.currentLevel, logout]);
 
   return (
     <GameContext.Provider value={{
-      ...state, 
-      login, 
+      ...state,
+      login,
       logout,
-      setCurrentLevel, 
-      addScore, 
+      setCurrentLevel,
+      addScore,
       deductTime,
-      startTimer, 
+      startTimer,
       stopTimer,
       pauseTimer,
       resumeTimer,
-      submitAnswer, 
-      requestHint, 
+      submitAnswer,
+      requestHint,
       getHintInfo,
-      resetGame, 
-      setLevel2Stage, 
-      setLevel3Stage, 
+      resetGame,
+      setLevel2Stage,
+      setLevel3Stage,
       setLevel4Stage,
       saveProgress,
       loadProgress,

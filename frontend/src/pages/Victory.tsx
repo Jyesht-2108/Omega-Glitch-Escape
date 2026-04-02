@@ -12,9 +12,13 @@ const formatTime = (s: number) => {
 };
 
 const Victory = () => {
-  const { teamName, score, timerSeconds, leaderboard, refreshLeaderboard, stopTimer, completeGame } = useGame();
+  const { teamName, score, timerSeconds, leaderboard, refreshLeaderboard, stopTimer, completeGame, currentLevel } = useGame();
   const [submitted, setSubmitted] = useState(false);
   const elapsed = 3 * 60 * 60 - timerSeconds;
+  
+  // Determine if this was a successful completion or time expiration
+  const timeExpired = timerSeconds <= 0;
+  const gameWon = currentLevel >= 5 || (currentLevel === 4 && !timeExpired); // Level 5 means completed Level 4
 
   useEffect(() => {
     // Stop the timer and mark game as completed immediately
@@ -60,27 +64,44 @@ const Victory = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}
-          className="text-3xl font-bold text-secondary text-glow-green mb-6"
+          className={`text-3xl font-bold mb-6 ${
+            timeExpired 
+              ? 'text-destructive text-glow-red' 
+              : 'text-secondary text-glow-green'
+          }`}
         >
-          SYSTEM RESTORED
+          {timeExpired ? 'TIME EXPIRED' : 'SYSTEM RESTORED'}
         </motion.h1>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="text-xl text-primary text-glow-cyan mb-8"
+          className={`text-xl mb-8 ${
+            timeExpired 
+              ? 'text-destructive text-glow-red' 
+              : 'text-primary text-glow-cyan'
+          }`}
         >
-          <Typewriter text="OMEGA TERMINATED" speed={80} />
+          <Typewriter 
+            text={timeExpired ? 'MISSION INCOMPLETE' : 'OMEGA TERMINATED'} 
+            speed={80} 
+          />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 3.5 }}
-          className="border border-border bg-card p-6 text-left space-y-2 box-glow-cyan"
+          className={`border bg-card p-6 text-left space-y-2 ${
+            timeExpired 
+              ? 'border-destructive box-glow-red' 
+              : 'border-border box-glow-cyan'
+          }`}
         >
-          <div className="text-xs text-muted-foreground">MISSION DEBRIEF:</div>
+          <div className="text-xs text-muted-foreground">
+            {timeExpired ? 'MISSION FAILED:' : 'MISSION DEBRIEF:'}
+          </div>
           <div className="text-sm">
             <span className="text-muted-foreground">TEAM: </span>
             <span className="text-primary">{teamName || 'UNKNOWN'}</span>
@@ -90,13 +111,24 @@ const Victory = () => {
             <span className="text-accent">{score} PTS</span>
           </div>
           <div className="text-sm">
+            <span className="text-muted-foreground">LEVEL REACHED: </span>
+            <span className="text-primary">{currentLevel}</span>
+          </div>
+          <div className="text-sm">
             <span className="text-muted-foreground">TIME ELAPSED: </span>
             <span className="text-primary">{formatTime(elapsed)}</span>
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">TIME REMAINING: </span>
-            <span className={timerSeconds < 600 ? 'text-destructive' : 'text-secondary'}>{formatTime(timerSeconds)}</span>
+            <span className={timerSeconds <= 0 ? 'text-destructive' : 'text-secondary'}>
+              {formatTime(Math.max(0, timerSeconds))}
+            </span>
           </div>
+          {timeExpired && (
+            <div className="text-sm text-destructive pt-2 border-t border-destructive/30">
+              ⚠ Your team ran out of time before completing all levels.
+            </div>
+          )}
         </motion.div>
 
         {leaderboard.length > 0 && (
@@ -124,7 +156,10 @@ const Victory = () => {
           transition={{ delay: 5 }}
           className="mt-8 text-xs text-muted-foreground animate-flicker"
         >
-          ▸ ALL SYSTEMS NOMINAL ◂
+          {timeExpired 
+            ? '▸ MISSION TERMINATED ◂' 
+            : '▸ ALL SYSTEMS NOMINAL ◂'
+          }
         </motion.div>
       </div>
     </motion.div>

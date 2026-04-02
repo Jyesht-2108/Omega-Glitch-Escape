@@ -26,6 +26,20 @@ func (h *TeamHandler) GetCurrentTeam(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check if time has expired and auto-complete game
+	if team.TimeRemaining <= 0 && team.CompletedAt == nil {
+		// Time expired - auto-complete the game
+		updates := map[string]interface{}{
+			"completed_at": "now()",
+			"is_active":    false,
+		}
+		
+		if err := h.teamService.UpdateTeam(c.Context(), teamID, updates); err == nil {
+			// Refresh team data to get updated completion status
+			team, _ = h.teamService.GetTeam(c.Context(), teamID)
+		}
+	}
+
 	// Don't send password
 	team.Password = ""
 

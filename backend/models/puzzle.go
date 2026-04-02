@@ -68,7 +68,7 @@ var PuzzleAnswers = map[string]string{
 // Puzzle hints
 var PuzzleHints = map[string][]HintLevel{
 	"1": {
-		{Text: ">> LEVEL 1 HINT: To convert a decimal number into binary, repeatedly divide the number by 2 and read the remainders backwards. For example, 5 divided by 2 gives remainders 1, 0, 1 -> 0101.", TimeCost: 600, PointCost: 50},
+		{Text: ">> LEVEL 1 HINT: To convert a decimal number into binary, repeatedly divide the number by 2 and read the remainders backwards. For example, 5 divided by 2 gives remainders 1, 0, 1 -> 0101.", TimeCost: 80000, PointCost: 50},
 		{Text: ">> LEVEL 2 HINT: The physical lock needs you to evaluate the logic gates (like XOR, which outputs 1 only when inputs differ). To convert binary back to decimal, multiply each bit from right to left by 2 raised to the power of its position (e.g., 0101 = 0*8 + 1*4 + 0*2 + 1*1 = 5).", TimeCost: 900, PointCost: 100},
 		{Text: ">> LEVEL 3 OVERRIDE: The combination of the letters decoded from the configurations forms the word SYS.", TimeCost: 1500, PointCost: 200},
 	},
