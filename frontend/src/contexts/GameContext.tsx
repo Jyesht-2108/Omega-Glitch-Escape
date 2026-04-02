@@ -24,6 +24,7 @@ interface GameState {
   level3Stage: 'pointers' | 'stack' | 'dataset';
   level4Stage: 'glitch' | 'cipher';
   gameCompleted: boolean;
+  completionReason?: 'victory' | 'timeout' | 'level4_timeout';
 }
 
 interface GameContextType extends GameState {
@@ -46,7 +47,7 @@ interface GameContextType extends GameState {
   saveProgress: () => Promise<void>;
   loadProgress: () => Promise<void>;
   refreshLeaderboard: () => Promise<void>;
-  completeGame: () => void;
+  completeGame: (reason?: 'victory' | 'timeout' | 'level4_timeout') => void;
 }
 
 const EMPTY_LEADERBOARD: LeaderboardEntry[] = [];
@@ -73,7 +74,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           level2Stage: parsed.level2Stage || 'python',
           level3Stage: parsed.level3Stage || 'pointers',
           level4Stage: parsed.level4Stage || 'glitch',
-          gameCompleted: parsed.gameCompleted || false
+          gameCompleted: parsed.gameCompleted || false,
+          completionReason: parsed.completionReason
         };
       } catch {
         return {
@@ -157,7 +159,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...prev,
               timerSeconds: 0,
               isTimerRunning: false,
-              gameCompleted: true
+              gameCompleted: true,
+              completionReason: 'timeout'
             };
           }
           return { ...prev, timerSeconds: newTime };
@@ -240,7 +243,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         score: team.score || 0,
         timerSeconds: team.time_remaining,
         isLoggedIn: true,
-        gameCompleted: isCompleted || timeExpired
+        gameCompleted: isCompleted || timeExpired,
+        completionReason: timeExpired ? 'timeout' : (isCompleted ? 'victory' : undefined)
       }));
 
       // If time expired, show message
@@ -460,12 +464,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const completeGame = useCallback(() => {
-    console.log('🎯 completeGame() called - marking game as completed');
+  const completeGame = useCallback((reason: 'victory' | 'timeout' | 'level4_timeout' = 'victory') => {
+    console.log(`🎯 completeGame() called with reason: ${reason}`);
     setState(prev => ({
       ...prev,
       gameCompleted: true,
-      isTimerRunning: false // Stop timer
+      isTimerRunning: false, // Stop timer
+      completionReason: reason
     }));
   }, []);
 
@@ -560,7 +565,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...prev,
             timerSeconds: 0,
             isTimerRunning: false,
-            gameCompleted: true
+            gameCompleted: true,
+            completionReason: 'timeout'
           }));
           return;
         }

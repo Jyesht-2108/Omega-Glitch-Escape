@@ -136,8 +136,10 @@ const AdminLeaderboard = () => {
               <div className="text-green-500 mb-2">BONUSES:</div>
               <div className="space-y-1 text-muted-foreground">
                 <div>• Base Score: Game points earned</div>
-                <div>• Level Bonus: Level² × 100 points</div>
-                <div>• Time Bonus: (Time Remaining / Total) × 500</div>
+                <div>• Level Bonus: Level² × 200 points</div>
+                <div>• Time Bonus (Completed): (Time Remaining / Total) × 1000</div>
+                <div>• Time Bonus (Incomplete): (Time Remaining / Total) × 200</div>
+                <div>• Completion Bonus: +2000 points</div>
               </div>
             </div>
             <div>

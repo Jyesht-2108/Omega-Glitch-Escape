@@ -12,13 +12,15 @@ const formatTime = (s: number) => {
 };
 
 const Victory = () => {
-  const { teamName, score, timerSeconds, leaderboard, refreshLeaderboard, stopTimer, completeGame, currentLevel } = useGame();
+  const { teamName, score, timerSeconds, leaderboard, refreshLeaderboard, stopTimer, completeGame, currentLevel, completionReason } = useGame();
   const [submitted, setSubmitted] = useState(false);
   const elapsed = 3 * 60 * 60 - timerSeconds;
   
-  // Determine if this was a successful completion or time expiration
-  const timeExpired = timerSeconds <= 0;
-  const gameWon = currentLevel >= 5 || (currentLevel === 4 && !timeExpired); // Level 5 means completed Level 4
+  // Determine completion type based on completion reason
+  const isLevel4Timeout = completionReason === 'level4_timeout';
+  const isMainTimeout = completionReason === 'timeout';
+  const isVictory = completionReason === 'victory' || currentLevel >= 5;
+  const timeExpired = isLevel4Timeout || isMainTimeout;
 
   useEffect(() => {
     // Stop the timer and mark game as completed immediately
@@ -70,7 +72,9 @@ const Victory = () => {
               : 'text-secondary text-glow-green'
           }`}
         >
-          {timeExpired ? 'TIME EXPIRED' : 'SYSTEM RESTORED'}
+          {isLevel4Timeout ? 'LEVEL 4 TIMEOUT' : 
+           isMainTimeout ? 'TIME EXPIRED' : 
+           'SYSTEM RESTORED'}
         </motion.h1>
 
         <motion.div
@@ -84,7 +88,9 @@ const Victory = () => {
           }`}
         >
           <Typewriter 
-            text={timeExpired ? 'MISSION INCOMPLETE' : 'OMEGA TERMINATED'} 
+            text={isLevel4Timeout ? 'OMEGA SURVIVED' :
+                  isMainTimeout ? 'MISSION INCOMPLETE' : 
+                  'OMEGA TERMINATED'} 
             speed={80} 
           />
         </motion.div>
@@ -100,7 +106,9 @@ const Victory = () => {
           }`}
         >
           <div className="text-xs text-muted-foreground">
-            {timeExpired ? 'MISSION FAILED:' : 'MISSION DEBRIEF:'}
+            {isLevel4Timeout ? 'LEVEL 4 FAILED:' :
+             isMainTimeout ? 'MISSION FAILED:' : 
+             'MISSION DEBRIEF:'}
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">TEAM: </span>
@@ -126,7 +134,10 @@ const Victory = () => {
           </div>
           {timeExpired && (
             <div className="text-sm text-destructive pt-2 border-t border-destructive/30">
-              ⚠ Your team ran out of time before completing all levels.
+              {isLevel4Timeout 
+                ? "⚠ Level 4's 10-minute countdown expired before completing the final puzzle."
+                : "⚠ Your team ran out of time before completing all levels."
+              }
             </div>
           )}
         </motion.div>
@@ -156,9 +167,11 @@ const Victory = () => {
           transition={{ delay: 5 }}
           className="mt-8 text-xs text-muted-foreground animate-flicker"
         >
-          {timeExpired 
-            ? '▸ MISSION TERMINATED ◂' 
-            : '▸ ALL SYSTEMS NOMINAL ◂'
+          {isLevel4Timeout 
+            ? '▸ OMEGA REMAINS ACTIVE ◂'
+            : timeExpired 
+              ? '▸ MISSION TERMINATED ◂' 
+              : '▸ ALL SYSTEMS NOMINAL ◂'
           }
         </motion.div>
       </div>

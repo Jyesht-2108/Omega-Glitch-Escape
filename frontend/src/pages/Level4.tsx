@@ -158,7 +158,7 @@ const Level4 = () => {
   const handleTimeout = async () => {
     setTimedOut(true);
     stopTimer();
-    completeGame();
+    completeGame('level4_timeout'); // Specify Level 4 timeout reason
     
     // Call backend to mark game as completed due to Level 4 timeout
     try {
@@ -200,6 +200,7 @@ const Level4 = () => {
       if (result.correct) {
         setFeedback('correct');
         stopTimer();
+        completeGame('victory'); // Mark as victory completion
         setTimeout(() => setVictory(true), 500);
         setTimeout(() => navigate('/victory'), 3000);
       } else {

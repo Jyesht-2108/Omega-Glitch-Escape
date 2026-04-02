@@ -567,16 +567,22 @@ func (h *AdminHandler) GetAdvancedLeaderboard(c *fiber.Ctx) error {
 		timeElapsed := 10800 - team.TimeRemaining
 		
 		// Calculate ranking score (higher is better)
-		// Formula: Base score from game + bonuses - penalties
+		// Formula: Base score + level bonus + time bonus - penalties
 		rankingScore := float64(team.Score)
 		
-		// Level completion bonus (exponential)
-		rankingScore += float64(team.CurrentLevel * team.CurrentLevel * 100)
+		// Level completion bonus (exponential - heavily rewards progression)
+		rankingScore += float64(team.CurrentLevel * team.CurrentLevel * 200)
 		
-		// Time bonus (faster is better)
+		// Time bonus - reward teams for having time remaining (completed or not)
+		// But give extra bonus if they actually completed the game
+		timeBonusPercent := float64(team.TimeRemaining) / 10800.0
 		if team.CompletedAt != nil {
-			timeBonusPercent := float64(team.TimeRemaining) / 10800.0
-			rankingScore += timeBonusPercent * 500
+			// Completed teams get full time bonus + completion bonus
+			rankingScore += timeBonusPercent * 1000 // Increased from 500
+			rankingScore += 2000 // Completion bonus
+		} else {
+			// Incomplete teams get smaller time bonus
+			rankingScore += timeBonusPercent * 200
 		}
 		
 		// Penalties
