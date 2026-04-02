@@ -135,7 +135,7 @@ const AdminLeaderboard = () => {
             <div>
               <div className="text-green-500 mb-2">BONUSES:</div>
               <div className="space-y-1 text-muted-foreground">
-                <div>• Base Score: Game points earned</div>
+                <div>• Live Score: Points after hint/answer penalties</div>
                 <div>• Level Bonus: Level² × 200 points</div>
                 <div>• Time Bonus (Completed): (Time Remaining / Total) × 1000</div>
                 <div>• Time Bonus (Incomplete): (Time Remaining / Total) × 200</div>
@@ -143,12 +143,14 @@ const AdminLeaderboard = () => {
               </div>
             </div>
             <div>
-              <div className="text-red-500 mb-2">PENALTIES:</div>
+              <div className="text-red-500 mb-2">BEHAVIORAL PENALTIES:</div>
               <div className="space-y-1 text-muted-foreground">
-                <div>• Hints Used: -50 points each</div>
-                <div>• Wrong Attempts: -20 points each</div>
+                <div>• Excessive Wrong Attempts: -10 points each</div>
                 <div>• Tab Switches: -30 points each</div>
                 <div>• Suspicious Activity: -100 points each</div>
+                <div className="text-xs text-yellow-500 mt-2">
+                  Note: Hint penalties already included in Live Score
+                </div>
               </div>
             </div>
           </div>

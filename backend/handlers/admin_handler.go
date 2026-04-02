@@ -567,29 +567,33 @@ func (h *AdminHandler) GetAdvancedLeaderboard(c *fiber.Ctx) error {
 		timeElapsed := 10800 - team.TimeRemaining
 		
 		// Calculate ranking score (higher is better)
-		// Formula: Base score + level bonus + time bonus - penalties
-		rankingScore := float64(team.Score)
+		// Formula: Live score + level bonus + time bonus - behavioral penalties
+		// NOTE: team.Score and team.TimeRemaining already include hint/answer penalties
+		rankingScore := float64(team.Score) // Already includes hint penalties
 		
 		// Level completion bonus (exponential - heavily rewards progression)
 		rankingScore += float64(team.CurrentLevel * team.CurrentLevel * 200)
 		
 		// Time bonus - reward teams for having time remaining (completed or not)
-		// But give extra bonus if they actually completed the game
+		// NOTE: team.TimeRemaining already includes hint time penalties
 		timeBonusPercent := float64(team.TimeRemaining) / 10800.0
 		if team.CompletedAt != nil {
 			// Completed teams get full time bonus + completion bonus
-			rankingScore += timeBonusPercent * 1000 // Increased from 500
+			rankingScore += timeBonusPercent * 1000
 			rankingScore += 2000 // Completion bonus
 		} else {
 			// Incomplete teams get smaller time bonus
 			rankingScore += timeBonusPercent * 200
 		}
 		
-		// Penalties
-		rankingScore -= float64(totalHints * 50)           // -50 per hint
-		rankingScore -= float64(totalWrongAttempts * 20)   // -20 per wrong attempt
-		rankingScore -= float64(team.TabSwitches * 30)     // -30 per tab switch
-		rankingScore -= float64(team.SuspiciousActivityCount * 100) // -100 per suspicious activity
+		// Behavioral penalties (NOT game mechanic penalties - those are already in Score/Time)
+		// Only penalize for anti-cheat violations and excessive attempts
+		rankingScore -= float64(totalWrongAttempts * 10)   // Reduced from 20 - only for excessive wrong attempts
+		rankingScore -= float64(team.TabSwitches * 30)     // Anti-cheat penalty
+		rankingScore -= float64(team.SuspiciousActivityCount * 100) // Anti-cheat penalty
+		
+		// NOTE: Removed hint penalty since team.Score already includes hint point deductions
+		// NOTE: Reduced wrong attempt penalty since some wrong attempts are normal
 		
 		// Disqualification penalty
 		if team.IsDisqualified {
