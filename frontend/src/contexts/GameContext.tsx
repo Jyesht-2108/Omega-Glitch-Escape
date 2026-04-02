@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { authService, Team, LoginResponse } from '@/services/authService';
 import { teamService } from '@/services/teamService';
 import { leaderboardService } from '@/services/leaderboardService';
-import { puzzleService } from '@/services/puzzleService';
+import { puzzleService, HintInfoResponse } from '@/services/puzzleService';
 
 interface LeaderboardEntry {
   rank: number;
@@ -38,6 +38,7 @@ interface GameContextType extends GameState {
   resumeTimer: () => void;
   submitAnswer: (level: string, answer: string) => Promise<{ correct: boolean; message: string }>;
   requestHint: (level: string) => Promise<string>;
+  getHintInfo: (level: string) => Promise<HintInfoResponse>;
   resetGame: () => void;
   setLevel2Stage: (stage: 'python' | 'base64') => void;
   setLevel3Stage: (stage: 'pointers' | 'stack' | 'dataset') => void;
@@ -304,16 +305,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await puzzleService.requestHint(level);
       
-      // Update local state with new time
+      // Update local state with new time and score
       setState(prev => ({
         ...prev,
         timerSeconds: response.time_remaining,
+        score: response.score,
       }));
 
       return response.hint;
     } catch (error: any) {
       console.error('Failed to request hint:', error);
       return ">> ERROR: Failed to retrieve hint";
+    }
+  }, []);
+
+  const getHintInfo = useCallback(async (level: string): Promise<HintInfoResponse> => {
+    try {
+      return await puzzleService.getHintInfo(level);
+    } catch (error: any) {
+      console.error('Failed to get hint info:', error);
+      throw error;
     }
   }, []);
 
@@ -529,6 +540,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       resumeTimer,
       submitAnswer, 
       requestHint, 
+      getHintInfo,
       resetGame, 
       setLevel2Stage, 
       setLevel3Stage, 

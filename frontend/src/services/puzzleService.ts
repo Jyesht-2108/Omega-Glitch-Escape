@@ -21,9 +21,21 @@ export interface RequestHintRequest {
 export interface RequestHintResponse {
   hint: string;
   time_remaining: number;
+  score: number;
   hints_used: number;
+  next_hint_time_cost: number;
+  next_hint_pts_cost: number;
+  max_hints_reached: boolean;
 }
 
+export interface HintInfoResponse {
+  level: string;
+  hints_used: number;
+  max_hints_reached: boolean;
+  next_hint_time_cost: number;
+  next_hint_pts_cost: number;
+  purchased_hints: string[];
+}
 export const puzzleService = {
   /**
    * Submit an answer for validation
@@ -52,6 +64,19 @@ export const puzzleService = {
       return response;
     } catch (error: any) {
       const message = error.response?.data?.error || 'Failed to request hint';
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Get hint info before requesting (for costs)
+   */
+  async getHintInfo(level: string): Promise<HintInfoResponse> {
+    try {
+      const response = await apiClient.get<HintInfoResponse>(`/puzzle/hint-info/${level}`);
+      return response;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to get hint info';
       throw new Error(message);
     }
   },

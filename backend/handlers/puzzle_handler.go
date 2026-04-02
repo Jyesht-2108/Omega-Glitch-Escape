@@ -82,8 +82,25 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 	if len(existingProgress) > 0 {
 		// Prevent points farming on already completed puzzles
 		if existingProgress[0].CompletedAt != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Puzzle already completed",
+			// Synchronize level if backend is trailing due to a client-side state overwrite
+			if isCorrect {
+				expectedLevel := team.CurrentLevel
+				if req.Level == "1" && expectedLevel < 2 { expectedLevel = 2 }
+				if req.Level == "2" && expectedLevel < 3 { expectedLevel = 3 }
+				if req.Level == "3" && expectedLevel < 4 { expectedLevel = 4 }
+				if req.Level == "4" && expectedLevel < 5 { expectedLevel = 5 }
+				if expectedLevel != team.CurrentLevel {
+					h.teamService.UpdateTeam(c.Context(), teamID, map[string]interface{}{"current_level": expectedLevel})
+					team.CurrentLevel = expectedLevel
+				}
+			}
+			return c.JSON(models.SubmitAnswerResponse{
+				Correct:       isCorrect,
+				Message:       getResponseMessage(isCorrect, req.Level),
+				Score:         team.Score,
+				TimeRemaining: team.TimeRemaining,
+				WrongAttempts: existingProgress[0].WrongAttempts,
+				CurrentLevel:  team.CurrentLevel,
 			})
 		}
 
@@ -198,18 +215,7 @@ func (h *PuzzleHandler) RequestHint(c *fiber.Ctx) error {
 		})
 	}
 
-	// Deduct 5 minutes (300 seconds)
-	newTimeRemaining := team.TimeRemaining - 300
-	if newTimeRemaining < 0 {
-		newTimeRemaining = 0
-	}
-
-	// Update team time
-	h.teamService.UpdateTeam(c.Context(), teamID, map[string]interface{}{
-		"time_remaining": newTimeRemaining,
-	})
-
-	// Update or create progress record to track hint usage
+	// Calculate and find the hint based on existing progress
 	levelNum := team.CurrentLevel
 	stage := req.Level
 
@@ -223,19 +229,63 @@ func (h *PuzzleHandler) RequestHint(c *fiber.Ctx) error {
 	var existingProgress []models.TeamProgress
 	json.Unmarshal(progressData, &existingProgress)
 
-	hintsUsed := 1
-
+	hintsUsed := 0
+	var progressID string
 	if len(existingProgress) > 0 {
-		// Update existing
-		hintsUsed = existingProgress[0].HintsUsed + 1
+		hintsUsed = existingProgress[0].HintsUsed
+		progressID = existingProgress[0].ID
+	}
+
+	puzzleHints, exists := models.PuzzleHints[req.Level]
+	if !exists || len(puzzleHints) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No hints available for this level",
+		})
+	}
+
+	if hintsUsed >= len(puzzleHints) {
+		// Just return the last hint if they already used max without costing more
+		lastHint := puzzleHints[len(puzzleHints)-1]
+		return c.JSON(models.RequestHintResponse{
+			Hint:             lastHint.Text,
+			TimeRemaining:    team.TimeRemaining,
+			Score:            team.Score,
+			HintsUsed:        hintsUsed,
+			MaxHintsReached:  true,
+		})
+	}
+
+	// Get the current hint cost
+	hintLevel := puzzleHints[hintsUsed]
+	
+	newTimeRemaining := team.TimeRemaining - hintLevel.TimeCost
+	if newTimeRemaining < 0 {
+		newTimeRemaining = 0
+	}
+	
+	newScore := team.Score - hintLevel.PointCost
+	// Capping at 0 just like time
+	if newScore < 0 {
+		newScore = 0
+	}
+
+	// Update team
+	h.teamService.UpdateTeam(c.Context(), teamID, map[string]interface{}{
+		"time_remaining": newTimeRemaining,
+		"score":          newScore,
+	})
+
+	hintsUsed++
+
+	// Update or create progress
+	if progressID != "" {
 		h.teamService.GetClient().From("team_progress").
 			Update(map[string]interface{}{
 				"hints_used": hintsUsed,
 			}, "", "").
-			Eq("id", existingProgress[0].ID).
+			Eq("id", progressID).
 			Execute()
 	} else {
-		// Create new
 		progress := map[string]interface{}{
 			"team_id":    teamID,
 			"level":      levelNum,
@@ -247,18 +297,93 @@ func (h *PuzzleHandler) RequestHint(c *fiber.Ctx) error {
 			Execute()
 	}
 
-	hint := models.PuzzleHints[req.Level]
-	if hint == "" {
-		hint = ">> NO HINT AVAILABLE"
+	nextTimeCost := 0
+	nextPtsCost := 0
+	maxReached := true
+	if hintsUsed < len(puzzleHints) {
+		nextTimeCost = puzzleHints[hintsUsed].TimeCost
+		nextPtsCost = puzzleHints[hintsUsed].PointCost
+		maxReached = false
 	}
 
 	response := models.RequestHintResponse{
-		Hint:          hint,
-		TimeRemaining: newTimeRemaining,
-		HintsUsed:     hintsUsed,
+		Hint:             hintLevel.Text,
+		TimeRemaining:    newTimeRemaining,
+		Score:            newScore,
+		HintsUsed:        hintsUsed,
+		NextHintTimeCost: nextTimeCost,
+		NextHintPtsCost:  nextPtsCost,
+		MaxHintsReached:  maxReached,
 	}
 
 	return c.JSON(response)
+}
+
+func (h *PuzzleHandler) GetHintInfo(c *fiber.Ctx) error {
+	teamID := c.Locals("teamID").(string)
+	level := c.Params("level")
+
+	if level == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Missing level parameter",
+		})
+	}
+
+	team, err := h.teamService.GetTeam(c.Context(), teamID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Team not found",
+		})
+	}
+
+	stage := level
+	levelNum := team.CurrentLevel
+
+	progressData, _, _ := h.teamService.GetClient().From("team_progress").
+		Select("*", "", false).
+		Eq("team_id", teamID).
+		Eq("level", fmt.Sprintf("%d", levelNum)).
+		Eq("stage", stage).
+		Execute()
+
+	var existingProgress []models.TeamProgress
+	json.Unmarshal(progressData, &existingProgress)
+
+	hintsUsed := 0
+	if len(existingProgress) > 0 {
+		hintsUsed = existingProgress[0].HintsUsed
+	}
+
+	puzzleHints, exists := models.PuzzleHints[level]
+	if !exists || len(puzzleHints) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No hints available for this level",
+		})
+	}
+
+	maxReached := true
+	nextTimeCost := 0
+	nextPtsCost := 0
+
+	if hintsUsed < len(puzzleHints) {
+		maxReached = false
+		nextTimeCost = puzzleHints[hintsUsed].TimeCost
+		nextPtsCost = puzzleHints[hintsUsed].PointCost
+	}
+
+	purchased := []string{}
+	for i := 0; i < hintsUsed && i < len(puzzleHints); i++ {
+		purchased = append(purchased, puzzleHints[i].Text)
+	}
+
+	return c.JSON(models.HintInfoResponse{
+		Level:            level,
+		HintsUsed:        hintsUsed,
+		MaxHintsReached:  maxReached,
+		NextHintTimeCost: nextTimeCost,
+		NextHintPtsCost:  nextPtsCost,
+		PurchasedHints:   purchased,
+	})
 }
 
 func getResponseMessage(correct bool, level string) string {
