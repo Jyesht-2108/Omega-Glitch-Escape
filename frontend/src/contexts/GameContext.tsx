@@ -7,7 +7,8 @@ import { puzzleService, HintInfoResponse } from '@/services/puzzleService';
 interface LeaderboardEntry {
   rank: number;
   team: string;
-  time: string;
+  score: number;
+  level: number;
 }
 
 interface GameState {
@@ -191,18 +192,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshLeaderboard = useCallback(async () => {
     try {
-      console.log('Fetching leaderboard...');
-      const leaderboardData = await leaderboardService.getLeaderboard();
-      console.log('Leaderboard data received:', leaderboardData);
+      console.log('Fetching live leaderboard...');
+      const leaderboardData = await leaderboardService.getLiveLeaderboard();
+      console.log('Live leaderboard data received:', leaderboardData);
       const formattedLeaderboard: LeaderboardEntry[] = leaderboardData.map((entry) => ({
         rank: entry.rank,
         team: entry.team_name,
-        time: entry.time_elapsed
+        score: entry.score,
+        level: entry.level
       }));
 
       setState(prev => ({ ...prev, leaderboard: formattedLeaderboard }));
     } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+      console.error('Failed to load live leaderboard:', error);
       // Set empty leaderboard on error to avoid showing "Loading..."
       setState(prev => ({ ...prev, leaderboard: [] }));
     }

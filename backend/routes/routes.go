@@ -54,6 +54,7 @@ func Setup(app *fiber.App, cfg *config.Config) {
 
 	// Leaderboard (public)
 	api.Get("/leaderboard", teamHandler.GetLeaderboard)
+	api.Get("/leaderboard/live", teamHandler.GetLiveLeaderboard)
 
 	// Admin routes (protected + admin only)
 	admin := api.Group("/admin")

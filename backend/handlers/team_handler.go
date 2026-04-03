@@ -130,6 +130,76 @@ func (h *TeamHandler) GetLeaderboard(c *fiber.Ctx) error {
 	return c.JSON(leaderboard)
 }
 
+func (h *TeamHandler) GetLiveLeaderboard(c *fiber.Ctx) error {
+	// Get all active teams (not disqualified)
+	teams, err := h.teamService.GetAllTeams(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch teams",
+		})
+	}
+
+	type LiveLeaderboardEntry struct {
+		Rank      int    `json:"rank"`
+		TeamName  string `json:"team_name"`
+		Score     int    `json:"score"`
+		Level     int    `json:"level"`
+		IsActive  bool   `json:"is_active"`
+	}
+
+	var leaderboard []LiveLeaderboardEntry
+
+	for _, team := range teams {
+		// Skip disqualified teams
+		if team.IsDisqualified {
+			continue
+		}
+
+		// Calculate ranking score (same logic as admin leaderboard but simplified)
+		rankingScore := float64(team.Score)
+		rankingScore += float64(team.CurrentLevel * team.CurrentLevel * 200)
+		
+		timeBonusPercent := float64(team.TimeRemaining) / 10800.0
+		if team.CompletedAt != nil {
+			rankingScore += timeBonusPercent * 1000
+			rankingScore += 2000
+		} else {
+			rankingScore += timeBonusPercent * 200
+		}
+
+		leaderboard = append(leaderboard, LiveLeaderboardEntry{
+			TeamName:  team.TeamName,
+			Score:     team.Score,
+			Level:     team.CurrentLevel,
+			IsActive:  team.IsActive && team.CompletedAt == nil,
+		})
+	}
+
+	// Sort by score (descending) - we'll use the same ranking logic
+	// For simplicity, just sort by score + level bonus
+	for i := 0; i < len(leaderboard); i++ {
+		for j := i + 1; j < len(leaderboard); j++ {
+			scoreI := float64(leaderboard[i].Score) + float64(leaderboard[i].Level*leaderboard[i].Level*200)
+			scoreJ := float64(leaderboard[j].Score) + float64(leaderboard[j].Level*leaderboard[j].Level*200)
+			if scoreJ > scoreI {
+				leaderboard[i], leaderboard[j] = leaderboard[j], leaderboard[i]
+			}
+		}
+	}
+
+	// Assign ranks
+	for i := range leaderboard {
+		leaderboard[i].Rank = i + 1
+	}
+
+	// Limit to top 20 for performance
+	if len(leaderboard) > 20 {
+		leaderboard = leaderboard[:20]
+	}
+
+	return c.JSON(leaderboard)
+}
+
 func (h *TeamHandler) DisqualifyTeam(c *fiber.Ctx) error {
 	teamID := c.Locals("teamID").(string)
 
