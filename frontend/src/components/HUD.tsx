@@ -27,7 +27,11 @@ const HUD = () => {
   };
 
   const getCurrentLevelString = () => {
-    if (currentLevel === 2 && level2Stage === 'base64') return '2-base64';
+    if (currentLevel === 2) {
+      if (level2Stage === 'python') return '2-python';
+      if (level2Stage === 'api') return '2-api';
+      if (level2Stage === 'base64') return '2-base64';
+    }
     if (currentLevel === 3) return level3Stage === 'pointers' ? '3-pointers' : level3Stage === 'stack' ? '3-stack' : '3-dataset';
     if (currentLevel === 4) return level4Stage === 'glitch' ? '4-glitch' : '4';
     return String(currentLevel);

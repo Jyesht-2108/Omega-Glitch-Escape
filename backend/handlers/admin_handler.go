@@ -587,13 +587,13 @@ func (h *AdminHandler) GetAdvancedLeaderboard(c *fiber.Ctx) error {
 		}
 		
 		// Behavioral penalties (NOT game mechanic penalties - those are already in Score/Time)
-		// Only penalize for anti-cheat violations and excessive attempts
-		rankingScore -= float64(totalWrongAttempts * 10)   // Reduced from 20 - only for excessive wrong attempts
+		// Only penalize for anti-cheat violations
+		// NOTE: Wrong attempt penalties are already deducted from team.Score
 		rankingScore -= float64(team.TabSwitches * 30)     // Anti-cheat penalty
 		rankingScore -= float64(team.SuspiciousActivityCount * 100) // Anti-cheat penalty
 		
 		// NOTE: Removed hint penalty since team.Score already includes hint point deductions
-		// NOTE: Reduced wrong attempt penalty since some wrong attempts are normal
+		// NOTE: Removed wrong attempt penalty since team.Score already includes wrong answer deductions
 		
 		// Disqualification penalty
 		if team.IsDisqualified {

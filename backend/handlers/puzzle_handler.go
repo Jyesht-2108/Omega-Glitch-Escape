@@ -69,7 +69,7 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 	switch req.Level {
 	case "1":
 		submittedLevelNum = 1
-	case "2-python", "2-base64", "2":
+	case "2-python", "2-api", "2-base64", "2":
 		submittedLevelNum = 2
 	case "3-pointers", "3-stack", "3-dataset", "3":
 		submittedLevelNum = 3
@@ -182,7 +182,7 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 			Execute()
 	}
 
-	// Update team score and stats if correct
+	// Update team score and stats
 	newScore := team.Score
 	newLevel := team.CurrentLevel
 	
@@ -196,6 +196,9 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 			// Level completed, advance to next level
 			if newLevel < 4 {
 				newLevel++
+			} else if req.Level == "4" {
+				// Completing level 4 should set to level 5 (game complete)
+				newLevel = 5
 			}
 		}
 
@@ -210,11 +213,37 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 			updates["completed_at"] = time.Now()
 		}
 
-		h.teamService.UpdateTeam(c.Context(), teamID, updates)
+		err := h.teamService.UpdateTeam(c.Context(), teamID, updates)
+		if err != nil {
+			fmt.Printf("ERROR updating team score: %v\n", err)
+		}
+	} else {
+		// Wrong answer - deduct points from score
+		const wrongAnswerPenalty = 20
+		newScore -= wrongAnswerPenalty
+		// Ensure score doesn't go negative
+		if newScore < 0 {
+			newScore = 0
+		}
+
+		// Update team score
+		err := h.teamService.UpdateTeam(c.Context(), teamID, map[string]interface{}{
+			"score": newScore,
+		})
+		if err != nil {
+			fmt.Printf("ERROR updating team score for wrong answer: %v\n", err)
+		}
 	}
 
 	// Get updated team data
-	updatedTeam, _ := h.teamService.GetTeam(c.Context(), teamID)
+	updatedTeam, err := h.teamService.GetTeam(c.Context(), teamID)
+	if err != nil {
+		fmt.Printf("ERROR getting updated team: %v\n", err)
+		// Fallback to using calculated values
+		updatedTeam = team
+		updatedTeam.Score = newScore
+		updatedTeam.CurrentLevel = newLevel
+	}
 
 	response := models.SubmitAnswerResponse{
 		Correct:       isCorrect,

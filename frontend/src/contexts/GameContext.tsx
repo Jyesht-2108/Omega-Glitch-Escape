@@ -21,7 +21,7 @@ interface GameState {
   isTimerRunning: boolean;
   hints: string[];
   leaderboard: LeaderboardEntry[];
-  level2Stage: 'python' | 'base64';
+  level2Stage: 'python' | 'api' | 'base64';
   level3Stage: 'pointers' | 'stack' | 'dataset';
   level4Stage: 'glitch' | 'cipher';
   gameCompleted: boolean;
@@ -42,7 +42,7 @@ interface GameContextType extends GameState {
   requestHint: (level: string) => Promise<string>;
   getHintInfo: (level: string) => Promise<HintInfoResponse>;
   resetGame: () => void;
-  setLevel2Stage: (stage: 'python' | 'base64') => void;
+  setLevel2Stage: (stage: 'python' | 'api' | 'base64') => void;
   setLevel3Stage: (stage: 'pointers' | 'stack' | 'dataset') => void;
   setLevel4Stage: (stage: 'glitch' | 'cipher') => void;
   saveProgress: () => Promise<void>;
@@ -385,7 +385,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const setLevel2Stage = useCallback((stage: 'python' | 'base64') => {
+  const setLevel2Stage = useCallback((stage: 'python' | 'api' | 'base64') => {
     setState(prev => ({ ...prev, level2Stage: stage }));
   }, []);
 

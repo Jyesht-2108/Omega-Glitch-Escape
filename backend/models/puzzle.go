@@ -50,6 +50,7 @@ var PuzzleAnswers = map[string]string{
 
 	// Level 2
 	"2-python": "BYPAS",
+	"2-api":    "N0D3",
 	"2-base64": "level3-admin",
 	"2":        "TEM",
 
@@ -68,7 +69,7 @@ var PuzzleAnswers = map[string]string{
 var PuzzleHints = map[string][]HintLevel{
 	"1": {
 		{Text: ">> LEVEL 1 HINT: To convert a decimal number into binary, repeatedly divide the number by 2 and read the remainders backwards. For example, 5 divided by 2 gives remainders 1, 0, 1 -> 0101.", TimeCost: 150, PointCost: 25},
-		{Text: ">> LEVEL 2 HINT: The physical lock needs you to evaluate the logic gates (like XOR, which outputs 1 only when inputs differ). To convert binary back to decimal, multiply each bit from right to left by 2 raised to the power of its position (e.g., 0101 = 0*8 + 1*4 + 0*2 + 1*1 = 5).", TimeCost: 300, PointCost: 40},
+		{Text: ">> LEVEL 2 HINT: The physical lock needs you to evaluate the logic gates (The AND gate outputs 1 only when both inputs are 1 && The OR gate outputs 1 when at least one input is 1). To convert binary back to decimal, multiply each bit from right to left by 2 raised to the power of its position (e.g., 0101 = 0*8 + 1*4 + 0*2 + 1*1 = 5).", TimeCost: 300, PointCost: 40},
 		{Text: ">> LEVEL 3 HINT: Look for patterns in the binary configurations. Each configuration represents a letter when converted to decimal, then to ASCII characters.", TimeCost: 550, PointCost: 75},
 	},
 
@@ -76,6 +77,11 @@ var PuzzleHints = map[string][]HintLevel{
 		{Text: ">> LEVEL 1 HINT: The loop needs to iterate exactly 5 times. Check how range() works in Python.", TimeCost: 180, PointCost: 25},
 		{Text: ">> LEVEL 2 HINT: Remember that Python's range(start, end) is exclusive of the end value.", TimeCost: 300, PointCost: 40},
 		{Text: ">> LEVEL 3 HINT: The correct range should start at 0 and end at 5. The output will be a 5-letter bypass code.", TimeCost: 600, PointCost: 75},
+	},
+	"2-api": {
+		{Text: ">> LEVEL 1 HINT: The API key is the answer from the Python puzzle. Use it in the X-API-Key header.", TimeCost: 120, PointCost: 25},
+		{Text: ">> LEVEL 2 HINT: Once you execute the request, search through the JSON response for 'password' or 'access' fields.", TimeCost: 160, PointCost: 40},
+		{Text: ">> LEVEL 3 HINT: The password is hidden deep in the security.admin_access object. It's a 4-character code with numbers.", TimeCost: 250, PointCost: 75},
 	},
 	"2-base64": {
 		{Text: ">> LEVEL 1 HINT: This is a Base64 encoded string. How do you decode it inside a browser environment?", TimeCost: 180, PointCost: 25},
@@ -89,9 +95,9 @@ var PuzzleHints = map[string][]HintLevel{
 	},
 
 	"3-pointers": {
-		{Text: ">> LEVEL 1 HINT: Follow the C pointer arithmetic step by step. What does it mean to add to a pointer?", TimeCost: 180, PointCost: 25},
-		{Text: ">> LEVEL 2 HINT: ptr + 1 moves forward by the size of the data type (an integer pointer shifts by 4 bytes, pointing to the next array element).", TimeCost: 300, PointCost: 40},
-		{Text: ">> LEVEL 3 HINT: The pointer arithmetic will lead you to a specific array element. The value at that position is a 2-digit number.", TimeCost: 600, PointCost: 75},
+		{Text: ">> LEVEL 1 HINT: The pointer starts at the 3rd element of the array.", TimeCost: 180, PointCost: 25},
+		{Text: ">> LEVEL 2 HINT: After ptr++, it moves to 40. Then ptr - 3 takes it back to the first element.", TimeCost: 300, PointCost: 40},
+		{Text: ">> LEVEL 3 HINT: From there, (ptr + 4) points to the last element. Finally, subtract 8 to get the answer.", TimeCost: 600, PointCost: 75},
 	},
 	"3-stack": {
 		{Text: ">> LEVEL 1 HINT: Recall how a Stack works: Last In, First Out (LIFO).", TimeCost: 180, PointCost: 25},
@@ -125,6 +131,7 @@ var PuzzleHints = map[string][]HintLevel{
 var PuzzleScores = map[string]int{
 	"1":          150, // Increased - main level
 	"2-python":   75,  // Increased - sub-puzzle
+	"2-api":      75,  // NEW - API discovery sub-puzzle
 	"2-base64":   75,  // Increased - sub-puzzle
 	"2":          150, // Same - main level
 	"3-pointers": 75,  // Increased - sub-puzzle
