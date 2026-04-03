@@ -57,7 +57,9 @@ CREATE TABLE IF NOT EXISTS game_settings (
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_teams_team_name ON teams(team_name);
+CREATE INDEX IF NOT EXISTS idx_teams_current_level ON teams(current_level);
 CREATE INDEX IF NOT EXISTS idx_team_progress_team_id ON team_progress(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_progress_team_level ON team_progress(team_id, level);
 CREATE INDEX IF NOT EXISTS idx_teams_completed_at ON teams(completed_at);
 CREATE INDEX IF NOT EXISTS idx_teams_score ON teams(score DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_actions_created_at ON admin_actions(created_at DESC);
