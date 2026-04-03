@@ -80,9 +80,14 @@ const Level3 = () => {
     console.log('Level3 - current stage:', level3Stage);
   }, [level3Stage, setLevel3Stage, startTimer]);
 
-  const filtered = search ? dataset.filter(r =>
-    r.id.includes(search) || r.model.includes(search) || r.status.includes(search.toUpperCase()) || r.confidence.includes(search)
-  ) : dataset;
+  const filtered = search ? dataset.filter(r => {
+    const searchUpper = search.toUpperCase();
+    // Prevent searching by exact confidence values to avoid cheating
+    // Only allow searching by ID, model, and status
+    return r.id.includes(search) || 
+           r.model.toUpperCase().includes(searchUpper) || 
+           r.status.includes(searchUpper);
+  }) : dataset;
 
   const handlePointerSubmit = async () => {
     try {
@@ -362,7 +367,7 @@ const Level3 = () => {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="input-cyber flex-1 text-xs py-1"
-                  placeholder="Search by ID, model, status, or confidence..."
+                  placeholder="Search by ID, model, or status..."
                 />
                 <span className="text-xs text-muted-foreground">{filtered.length} / 500 records</span>
               </div>
@@ -412,7 +417,7 @@ const Level3 = () => {
                   value={datasetAnswer}
                   onChange={e => setDatasetAnswer(e.target.value)}
                   className="input-cyber flex-1 font-mono"
-                  placeholder="Enter the confidence score > 1.0..."
+                  placeholder="Enter the confidence score..."
                   onKeyDown={e => e.key === 'Enter' && handleDatasetSubmit()}
                   animate={feedback === 'wrong' ? { x: [-10, 10, -10, 10, 0] } : {}}
                 />

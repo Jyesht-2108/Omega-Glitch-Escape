@@ -191,7 +191,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshLeaderboard = useCallback(async () => {
     try {
+      console.log('Fetching leaderboard...');
       const leaderboardData = await leaderboardService.getLeaderboard();
+      console.log('Leaderboard data received:', leaderboardData);
       const formattedLeaderboard: LeaderboardEntry[] = leaderboardData.map((entry) => ({
         rank: entry.rank,
         team: entry.team_name,
@@ -201,6 +203,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setState(prev => ({ ...prev, leaderboard: formattedLeaderboard }));
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
+      // Set empty leaderboard on error to avoid showing "Loading..."
+      setState(prev => ({ ...prev, leaderboard: [] }));
     }
   }, []);
 

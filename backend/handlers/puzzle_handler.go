@@ -60,6 +60,30 @@ func (h *PuzzleHandler) SubmitAnswer(c *fiber.Ctx) error {
 		})
 	}
 
+	// Validate that the submitted level matches the team's current progress
+	// Prevent players from going back to previous levels to farm points
+	expectedLevel := team.CurrentLevel
+	submittedLevelNum := 0
+	
+	// Map stage to level number
+	switch req.Level {
+	case "1":
+		submittedLevelNum = 1
+	case "2-python", "2-base64", "2":
+		submittedLevelNum = 2
+	case "3-pointers", "3-stack", "3-dataset", "3":
+		submittedLevelNum = 3
+	case "4-glitch", "4":
+		submittedLevelNum = 4
+	}
+	
+	// Only allow submitting answers for the current level
+	if submittedLevelNum != expectedLevel {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": fmt.Sprintf("Cannot submit answer for level %d. You are currently on level %d", submittedLevelNum, expectedLevel),
+		})
+	}
+
 	// Normalize answer
 	submittedAnswer := strings.ToUpper(strings.TrimSpace(req.Answer))
 	correctAnswer := strings.ToUpper(strings.TrimSpace(models.PuzzleAnswers[req.Level]))

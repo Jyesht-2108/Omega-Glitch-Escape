@@ -129,7 +129,7 @@ const HUD = () => {
 
         {/* Leaderboard ticker */}
         <div className="overflow-hidden border-t border-border/50 py-1">
-          {leaderboard.length > 0 ? (
+          {leaderboard && leaderboard.length > 0 ? (
             <motion.div
               key={leaderboard.map(e => `${e.team}-${e.time}`).join(',')}
               className="flex gap-8 whitespace-nowrap text-xs text-muted-foreground px-4"
@@ -144,7 +144,7 @@ const HUD = () => {
             </motion.div>
           ) : (
             <div className="text-xs text-muted-foreground/50 px-4 text-center font-mono">
-              Loading leaderboard...
+              No completed teams yet - Be the first to finish!
             </div>
           )}
         </div>

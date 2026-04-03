@@ -10,10 +10,14 @@ const Level3Admin = () => {
   const navigate = useNavigate();
   const { submitAnswer, currentLevel } = useGame();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Submit the base64 answer when page loads (only once)
     const submitBase64Answer = async () => {
+      if (isSubmitting) return; // Prevent double submission
+      setIsSubmitting(true);
+      
       try {
         // Submit "TEM" as the answer for level "2" to complete the level
         const result = await submitAnswer('2', 'TEM');
@@ -30,10 +34,8 @@ const Level3Admin = () => {
   }, []); // Empty deps - only run once on mount
 
   const handleProceed = () => {
-    // Small delay to ensure state has updated from submission
-    setTimeout(() => {
-      navigate('/level/3');
-    }, 100);
+    // Navigate to level 3 when button is clicked
+    navigate('/level/3', { replace: true });
   };
 
   return (
@@ -65,10 +67,6 @@ const Level3Admin = () => {
           {submitted ? 'PROCEED TO LEVEL 3' : 'PROCESSING...'}
           <ArrowRight className="w-4 h-4" />
         </motion.button>
-
-        {submitted && currentLevel < 3 && (
-          <p className="text-xs text-destructive mt-2">Waiting for level update...</p>
-        )}
       </div>
     </motion.div>
   );

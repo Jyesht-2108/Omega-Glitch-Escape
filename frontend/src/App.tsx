@@ -76,7 +76,7 @@ const AppRoutes = () => {
           } />
           <Route path="/level3-admin" element={
             <ProtectedRoute>
-              <LevelGuard requiredLevel={3}>
+              <LevelGuard requiredLevel={2}>
                 <Level3Admin />
               </LevelGuard>
             </ProtectedRoute>
