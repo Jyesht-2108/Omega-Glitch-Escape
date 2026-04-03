@@ -27,7 +27,7 @@ const LogicCircuit = ({ inputs, onToggleInput, gateConfig }: {
 }) => {
   // Different gate configurations produce different outputs
   let gate1: boolean, gate2: boolean, gate3: boolean, gate4: boolean;
-  
+
   if (gateConfig === 'A') {
     // Config A: Should produce 5 (0101) for 'S'
     // With input 101101: A=1,B=0,C=1,D=1,E=0,F=1
@@ -51,20 +51,20 @@ const LogicCircuit = ({ inputs, onToggleInput, gateConfig }: {
     gate4 = inputs[0] || inputs[1];  // 1 OR 0 = 1
     // Result: 0101 = 5 ✓
   }
-  
+
   // Create outputs that will give us the pattern we need
   const output1 = gate1 ? '1' : '0';
   const output2 = gate2 ? '1' : '0';
   const output3 = gate3 ? '1' : '0';
   const output4 = gate4 ? '1' : '0';
-  
+
   // Get gate labels based on config
   const getGateLabels = () => {
     if (gateConfig === 'A') return ['AND', 'OR', 'AND', 'OR'];
     if (gateConfig === 'B') return ['AND', 'OR', 'OR', 'AND'];
     return ['AND', 'OR', 'AND', 'OR'];
   };
-  
+
   const gateLabels = getGateLabels();
 
   const green = "hsl(120,100%,50%)";
@@ -83,13 +83,13 @@ const LogicCircuit = ({ inputs, onToggleInput, gateConfig }: {
               <text x="45" y={yPos + 5} fill={green} fontSize="16" fontFamily="monospace">
                 {String.fromCharCode(65 + i)}: {active ? '1' : '0'}
               </text>
-              <line 
-                x1="38" 
-                y1={yPos} 
-                x2="150" 
-                y2={i < 2 ? 110 : i < 4 ? 210 : 310} 
-                stroke={active ? green : greenDim} 
-                strokeWidth="2" 
+              <line
+                x1="38"
+                y1={yPos}
+                x2="150"
+                y2={i < 2 ? 110 : i < 4 ? 210 : 310}
+                stroke={active ? green : greenDim}
+                strokeWidth="2"
               />
             </g>
           );
@@ -139,9 +139,8 @@ const LogicCircuit = ({ inputs, onToggleInput, gateConfig }: {
           <button
             key={i}
             onClick={() => onToggleInput(i)}
-            className={`text-sm py-2 border font-mono transition-colors ${
-              active ? 'border-secondary bg-secondary/20 text-secondary' : 'border-border text-muted-foreground'
-            }`}
+            className={`text-sm py-2 border font-mono transition-colors ${active ? 'border-secondary bg-secondary/20 text-secondary' : 'border-border text-muted-foreground'
+              }`}
           >
             {String.fromCharCode(65 + i)}: {active ? '1' : '0'}
           </button>
@@ -162,7 +161,7 @@ const Level1 = () => {
   const { submitAnswer, startTimer, currentLevel } = useGame();
   const navigate = useNavigate();
 
-  useEffect(() => { 
+  useEffect(() => {
     // Level is already set by backend, just start timer
     // Only start timer if it's not already running
     startTimer();
@@ -173,18 +172,18 @@ const Level1 = () => {
   };
 
   const binaryToDecimal = (binary: string) => parseInt(binary, 2);
-  
+
   const decimalToChar = (decimal: number): string => {
     const mapping: { [key: number]: string } = { 5: 'S', 7: 'Y', 9: 'T', 3: 'E', 11: 'M' };
     return mapping[decimal] || '';
   };
-  
+
   // Use useMemo to recalculate when inputs or gateConfig changes
   const currentOutput = useMemo(() => {
     let gate1: boolean, gate2: boolean, gate3: boolean, gate4: boolean;
-    
+
     console.log('Calculating output for config:', gateConfig, 'inputs:', inputs);
-    
+
     if (gateConfig === 'A') {
       // Config A: Should produce 5 (0101) for 'S'
       // With input [1,0,1,1,0,1]: A=1,B=0,C=1,D=1,E=0,F=1
@@ -208,7 +207,7 @@ const Level1 = () => {
       gate4 = inputs[0] || inputs[1];  // 1 OR 0 = 1
       // Result: 0101 = 5 ✓
     }
-    
+
     const output = `${gate1 ? '1' : '0'}${gate2 ? '1' : '0'}${gate3 ? '1' : '0'}${gate4 ? '1' : '0'}`;
     console.log('Output:', output);
     return output;
@@ -226,14 +225,14 @@ const Level1 = () => {
   const getDecodedChar = (config: GateConfig): string => {
     const binary = collectedOutputs[config];
     const inputDecimal = decimalInputs[config];
-    
+
     console.log(`Config ${config}: binary=${binary}, inputDecimal=${inputDecimal}`);
-    
+
     if (!binary || !inputDecimal) return '';
-    
+
     const correctDecimal = binaryToDecimal(binary);
     console.log(`Config ${config}: correctDecimal=${correctDecimal}, inputDecimal=${inputDecimal}, match=${parseInt(inputDecimal) === correctDecimal}`);
-    
+
     if (parseInt(inputDecimal) === correctDecimal) {
       const char = decimalToChar(correctDecimal);
       console.log(`Config ${config}: decoded char=${char}`);
@@ -248,7 +247,7 @@ const Level1 = () => {
       const result = await submitAnswer('1', answer);
       console.log('Submit result:', result);
       console.log('Current level after submit:', currentLevel);
-      
+
       if (result.correct) {
         setFeedback('correct');
         console.log('Answer correct! Navigating to Level 2...');
@@ -330,11 +329,10 @@ const Level1 = () => {
               <button
                 key={config}
                 onClick={() => setGateConfig(config)}
-                className={`py-3 border font-mono font-bold transition-colors ${
-                  gateConfig === config
+                className={`py-3 border font-mono font-bold transition-colors ${gateConfig === config
                     ? 'border-secondary bg-secondary/20 text-secondary'
                     : 'border-border text-muted-foreground hover:border-secondary/50'
-                }`}
+                  }`}
               >
                 CONFIG {config}
                 {collectedOutputs[config] && <span className="ml-2">✓</span>}
@@ -354,9 +352,6 @@ const Level1 = () => {
           </div>
           <div className="text-xs text-muted-foreground text-center mb-1">
             Convert this binary to decimal manually
-          </div>
-          <div className="text-xs text-secondary/50 text-center mb-3">
-            Debug: {currentOutput} = {binaryToDecimal(currentOutput)}
           </div>
           <motion.button
             onClick={handleCollectOutput}
@@ -432,11 +427,10 @@ const Level1 = () => {
               onClick={handleSubmit}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`px-8 py-3 font-mono font-bold transition-colors ${
-                feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
-                feedback === 'wrong' ? 'bg-destructive text-destructive-foreground' :
-                'bg-primary text-primary-foreground hover:opacity-90'
-              }`}
+              className={`px-8 py-3 font-mono font-bold transition-colors ${feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
+                  feedback === 'wrong' ? 'bg-destructive text-destructive-foreground' :
+                    'bg-primary text-primary-foreground hover:opacity-90'
+                }`}
             >
               {feedback === 'correct' ? '✓ UNLOCKED' : 'UNLOCK'}
             </motion.button>
