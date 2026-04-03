@@ -65,10 +65,31 @@ const Level3 = () => {
   const [datasetAnswer, setDatasetAnswer] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [search, setSearch] = useState('');
+  const [manualStack, setManualStack] = useState<number[]>([]);
+  const [pushValue, setPushValue] = useState('');
 
   const { submitAnswer, level3Stage, setLevel3Stage, startTimer } = useGame();
   const navigate = useNavigate();
   const dataset = useMemo(generateDataset, []);
+
+  const handleManualPush = () => {
+    const value = parseInt(pushValue);
+    if (!isNaN(value)) {
+      setManualStack([...manualStack, value]);
+      setPushValue('');
+    }
+  };
+
+  const handleManualPop = () => {
+    if (manualStack.length > 0) {
+      setManualStack(manualStack.slice(0, -1));
+    }
+  };
+
+  const handleResetStack = () => {
+    setManualStack([]);
+    setPushValue('');
+  };
 
   useEffect(() => {
     // Level is already set by backend
@@ -272,36 +293,126 @@ const Level3 = () => {
               ✓ PIN ACCEPTED. Accessing fragmented memory...
             </div>
 
+            <div className="border border-accent/50 bg-accent/10 p-4 mb-4 box-glow-red">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-accent mt-0.5" />
+                <div className="text-sm text-accent/90">
+                  <div className="font-bold mb-1">CHALLENGE:</div>
+                  <div className="text-xs space-y-1">
+                    <div>• Use the controls to step through each operation</div>
+                    <div>• Watch the stack change in real-time (LIFO - Last In, First Out)</div>
+                    <div>• Find the final stack state (top to bottom)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Operations List */}
+              {/* Drag & Drop Stack Workspace */}
               <div className="border border-border bg-card p-4 box-glow-cyan">
-                <h4 className="text-xs text-muted-foreground mb-3">STACK OPERATIONS (LIFO - Last In, First Out)</h4>
-                <div className="space-y-1 max-h-96 overflow-y-auto">
-                  {STACK_OPERATIONS.map((op, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm font-mono py-1 px-2 bg-muted/20">
-                      <span className="text-muted-foreground/50 w-6">{i + 1}.</span>
-                      <span className={op.op === 'PUSH' ? 'text-secondary' : 'text-destructive'}>
-                        {op.op}
-                      </span>
-                      {op.val !== null && <span className="text-primary font-bold">{op.val}</span>}
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs text-muted-foreground">STACK WORKSPACE (Drag & Drop)</h4>
+                  <button
+                    onClick={handleResetStack}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    RESET
+                  </button>
+                </div>
+
+                {/* Available Numbers Pool */}
+                <div className="bg-muted/30 p-3 rounded mb-4">
+                  <div className="text-xs text-muted-foreground mb-2">AVAILABLE NUMBERS (Drag to Stack):</div>
+                  <div className="flex flex-wrap gap-2">
+                    {[42, 17, 88, 3, 65, 99, 7].map((num) => (
+                      <motion.div
+                        key={num}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('number', num.toString());
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-16 h-16 border-2 border-primary bg-primary/20 flex items-center justify-center font-mono text-lg font-bold text-primary cursor-grab active:cursor-grabbing hover:bg-primary/30 transition-colors"
+                      >
+                        {num}
+                      </motion.div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground/70 mt-2">
+                    💡 Drag numbers to the stack area below. Click a block in the stack to remove it (POP).
+                  </div>
+                </div>
+
+                {/* Stack Drop Zone */}
+                <div 
+                  className="bg-muted/20 p-4 rounded min-h-[300px] flex flex-col-reverse items-center justify-start border-2 border-dashed border-secondary/50"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const num = parseInt(e.dataTransfer.getData('number'));
+                    if (!isNaN(num)) {
+                      setManualStack([...manualStack, num]);
+                    }
+                  }}
+                >
+                  <AnimatePresence>
+                    {manualStack.map((value, index) => (
+                      <motion.div
+                        key={`${value}-${index}-${manualStack.length}`}
+                        initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
+                        onClick={() => {
+                          // Click to remove (POP)
+                          if (index === manualStack.length - 1) {
+                            setManualStack(manualStack.slice(0, -1));
+                          }
+                        }}
+                        className={`w-32 h-12 border-2 border-secondary bg-secondary/20 flex items-center justify-center font-mono text-xl font-bold text-secondary mb-1 relative ${
+                          index === manualStack.length - 1 ? 'cursor-pointer hover:bg-destructive/30 hover:border-destructive' : 'opacity-70'
+                        }`}
+                      >
+                        {value}
+                        {index === manualStack.length - 1 && (
+                          <div className="absolute -right-20 text-xs text-accent flex items-center gap-1">
+                            ← TOP
+                            <span className="text-destructive text-[10px]">(click to POP)</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  {manualStack.length === 0 && (
+                    <div className="text-muted-foreground text-sm">
+                      Drop numbers here to build your stack
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                <div className="mt-3 text-xs text-muted-foreground text-center">
+                  Current Stack: {manualStack.length === 0 ? 'Empty' : manualStack.slice().reverse().join(' → ')}
                 </div>
               </div>
 
-              {/* Instructions */}
+              {/* Operations List & Answer */}
               <div className="space-y-4">
-                <div className="border border-accent/50 bg-accent/10 p-4 box-glow-red">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-accent mt-0.5" />
-                    <div className="text-sm text-accent/90">
-                      <div className="font-bold mb-1">CHALLENGE:</div>
-                      <div className="text-xs space-y-1">
-                        <div>• Start with an empty stack</div>
-                        <div>• Execute each operation in order</div>
-                        <div>• Find the final stack state (top to bottom)</div>
+                <div className="border border-border bg-card p-4 box-glow-cyan max-h-[400px] overflow-y-auto">
+                  <h4 className="text-xs text-muted-foreground mb-3">OPERATIONS TO TRACE:</h4>
+                  <div className="space-y-1">
+                    {STACK_OPERATIONS.map((op, i) => (
+                      <div 
+                        key={i} 
+                        className="flex items-center gap-2 text-sm font-mono py-1 px-2 bg-muted/20"
+                      >
+                        <span className="text-muted-foreground/50 w-6">{i + 1}.</span>
+                        <span className={op.op === 'PUSH' ? 'text-secondary' : 'text-destructive'}>
+                          {op.op}
+                        </span>
+                        {op.val !== null && <span className="text-primary font-bold">{op.val}</span>}
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
@@ -320,10 +431,11 @@ const Level3 = () => {
                       onClick={handleStackSubmit}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className={`px-6 py-2 font-mono font-bold transition-colors ${feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
+                      className={`px-6 py-2 font-mono font-bold transition-colors ${
+                        feedback === 'correct' ? 'bg-secondary text-secondary-foreground' :
                         feedback === 'wrong' ? 'bg-destructive text-destructive-foreground' :
-                          'bg-primary text-primary-foreground hover:opacity-90'
-                        }`}
+                        'bg-primary text-primary-foreground hover:opacity-90'
+                      }`}
                     >
                       SUBMIT
                     </motion.button>
