@@ -85,7 +85,7 @@ var PuzzleHints = map[string][]HintLevel{
 	},
 	"2-base64": {
 		{Text: ">> LEVEL 1 HINT: This is a Base64 encoded string. How do you decode it inside a browser environment?", TimeCost: 180, PointCost: 25},
-		{Text: ">> LEVEL 2 HINT: Open the Developer Console (F12) and look into built-in JavaScript functions for decoding Base64.", TimeCost: 300, PointCost: 40},
+		{Text: ">> LEVEL 2 HINT: Open the Developer Console (F12) or (Ctrl+Shift+I) and look into built-in JavaScript functions for decoding Base64.", TimeCost: 300, PointCost: 40},
 		{Text: ">> LEVEL 3 HINT: Use atob() function in the console. The decoded string will reveal a hidden admin panel location.", TimeCost: 600, PointCost: 75},
 	},
 	"2": {

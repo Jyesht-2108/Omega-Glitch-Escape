@@ -34,6 +34,7 @@ interface GameContextType extends GameState {
   setCurrentLevel: (level: number) => Promise<void>;
   addScore: (points: number) => void;
   deductTime: (seconds: number) => void;
+  startGame: () => void;
   startTimer: () => void;
   stopTimer: () => void;
   pauseTimer: () => void;
@@ -310,6 +311,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deductTime = useCallback((seconds: number) => {
     setState(prev => ({ ...prev, timerSeconds: Math.max(0, prev.timerSeconds - seconds) }));
+  }, []);
+
+  const startGame = useCallback(() => {
+    // Start the timer when the game officially begins (after instructions)
+    setState(prev => ({ ...prev, isTimerRunning: true }));
   }, []);
 
   const startTimer = useCallback(() => {
@@ -619,6 +625,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentLevel,
       addScore,
       deductTime,
+      startGame,
       startTimer,
       stopTimer,
       pauseTimer,

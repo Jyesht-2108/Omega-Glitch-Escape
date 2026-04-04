@@ -12,6 +12,8 @@ import CRTOverlay from "@/components/CRTOverlay";
 import AntiCheat from "@/components/AntiCheat";
 import HUD from "@/components/HUD";
 import Login from "@/pages/Login";
+import Intro from "@/pages/Intro";
+import Instructions from "@/pages/Instructions";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminLeaderboard from "@/pages/AdminLeaderboard";
@@ -30,9 +32,10 @@ const AppRoutes = () => {
   const location = useLocation();
   const { isLoggedIn } = useGame();
   
-  // Don't show HUD/AntiCheat/CRT on admin pages
+  // Don't show HUD/AntiCheat/CRT on admin pages, intro, or instructions
   const isAdminPage = location.pathname.startsWith('/admin');
-  const showHUD = isLoggedIn && location.pathname !== '/' && location.pathname !== '/victory' && !isAdminPage;
+  const isIntroOrInstructions = location.pathname === '/intro' || location.pathname === '/instructions';
+  const showHUD = isLoggedIn && location.pathname !== '/' && location.pathname !== '/victory' && !isAdminPage && !isIntroOrInstructions;
 
   return (
     <>
@@ -53,6 +56,16 @@ const AppRoutes = () => {
           {/* Game Routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/intro" element={
+            <ProtectedRoute>
+              <Intro />
+            </ProtectedRoute>
+          } />
+          <Route path="/instructions" element={
+            <ProtectedRoute>
+              <Instructions />
+            </ProtectedRoute>
+          } />
           <Route path="/level/1" element={
             <ProtectedRoute>
               <LevelGuard requiredLevel={1}>

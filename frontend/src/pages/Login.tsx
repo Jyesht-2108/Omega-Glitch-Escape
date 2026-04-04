@@ -20,7 +20,11 @@ const Login = () => {
     if (isLoggedIn) {
       if (gameCompleted) {
         navigate('/victory');
+      } else if (currentLevel === 1) {
+        // First time login or at level 1 - show intro
+        navigate('/intro');
       } else {
+        // Resume at current level
         navigate(`/level/${currentLevel}`);
       }
     }
@@ -47,6 +51,9 @@ const Login = () => {
       // Check if game is completed
       if (response.team.completed_at) {
         navigate('/victory');
+      } else if (response.team.current_level === 1) {
+        // First time login or at level 1 - show intro
+        navigate('/intro');
       } else {
         // Navigate to current level
         navigate(`/level/${response.team.current_level}`);
