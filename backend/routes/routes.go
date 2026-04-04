@@ -24,11 +24,36 @@ func Setup(app *fiber.App, cfg *config.Config) {
 	// API routes
 	api := app.Group("/api")
 
-	// Health check
+	// Health check (API level)
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status": "ok",
 			"message": "OMEGA Glitch Escape API is running",
+		})
+	})
+
+	// Root health check (for load balancers)
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "ok",
+			"message": "OMEGA Glitch Escape API is running",
+		})
+	})
+
+	// Root endpoint
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"name":    "OMEGA Glitch Escape API",
+			"version": "1.0.0",
+			"status":  "running",
+			"endpoints": fiber.Map{
+				"health":      "/health or /api/health",
+				"auth":        "/api/auth/*",
+				"team":        "/api/team/*",
+				"puzzle":      "/api/puzzle/*",
+				"leaderboard": "/api/leaderboard",
+				"admin":       "/api/admin/*",
+			},
 		})
 	})
 

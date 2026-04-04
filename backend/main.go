@@ -36,10 +36,15 @@ func main() {
 
 	// Middleware
 	app.Use(logger.New())
+	
+	// CORS configuration for production
+	// For hackathon/demo: Allow all origins
+	// For production: Restrict to specific domains
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.FrontendURL,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+		AllowOrigins:     "*", // Allow all origins (good for hackathon)
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowCredentials: false, // Set to false when using AllowOrigins: "*"
 	}))
 
 	// Setup routes
