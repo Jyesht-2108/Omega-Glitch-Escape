@@ -5,7 +5,7 @@ import {
   Clock, TrendingUp, TrendingDown, Activity, Zap
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || '${API_URL}';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 interface Team {
   id: string;
@@ -248,7 +248,7 @@ export const CreateTeamModal = ({ show, onClose, onSuccess }: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch('${API_URL}/admin/teams', {
+      const res = await fetch(`${API_URL}/admin/teams`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
