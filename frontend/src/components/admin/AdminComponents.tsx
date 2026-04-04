@@ -5,6 +5,8 @@ import {
   Clock, TrendingUp, TrendingDown, Activity, Zap
 } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || '${API_URL}';
+
 interface Team {
   id: string;
   team_name: string;
@@ -53,7 +55,7 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
     if (!reason) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/disqualify`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}/disqualify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -73,7 +75,7 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
   const handleRequalify = async () => {
     try {
       console.log(`Requalifying team ${team.id}...`);
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/requalify`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}/requalify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -99,7 +101,7 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
     if (!confirm(`Reset team ${team.team_name}? This will clear all progress.`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/reset`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}/reset`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -118,7 +120,7 @@ export const TeamRow = ({ team, onEdit, onRefresh }: { team: Team; onEdit: () =>
     if (!confirm(`Delete team ${team.team_name}? This action cannot be undone.`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -246,7 +248,7 @@ export const CreateTeamModal = ({ show, onClose, onSuccess }: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/admin/teams', {
+      const res = await fetch('${API_URL}/admin/teams', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -352,7 +354,7 @@ export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/adjust-time`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}/adjust-time`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -378,7 +380,7 @@ export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}/adjust-score`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}/adjust-score`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,
@@ -404,7 +406,7 @@ export const EditTeamModal = ({ show, team, onClose, onSuccess }: any) => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/teams/${team.id}`, {
+      const res = await fetch(`${API_URL}/admin/teams/${team.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${adminToken()}`,

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { StatCard, TeamRow, CreateTeamModal, EditTeamModal } from '@/components/admin/AdminComponents';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 interface Team {
   id: string;
   team_name: string;
@@ -71,13 +73,13 @@ const AdminDashboard = () => {
   const loadData = async () => {
     try {
       const [teamsRes, statsRes, logsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/admin/teams', {
+        fetch(`${API_URL}/admin/teams`, {
           headers: { 'Authorization': `Bearer ${adminToken}` }
         }),
-        fetch('http://localhost:3000/api/admin/stats', {
+        fetch(`${API_URL}/admin/stats`, {
           headers: { 'Authorization': `Bearer ${adminToken}` }
         }),
-        fetch('http://localhost:3000/api/admin/logs?limit=50', {
+        fetch(`${API_URL}/admin/logs?limit=50`, {
           headers: { 'Authorization': `Bearer ${adminToken}` }
         })
       ]);

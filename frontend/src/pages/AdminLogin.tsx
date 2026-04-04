@@ -5,6 +5,8 @@ import { Shield, Lock, AlertCircle } from 'lucide-react';
 import Typewriter from '@/components/Typewriter';
 import GlitchText from '@/components/GlitchText';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +26,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/admin/login', {
+      const response = await fetch(`${API_URL}/auth/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

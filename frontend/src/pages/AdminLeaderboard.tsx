@@ -7,6 +7,8 @@ import {
   Crown, Star, Flame
 } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 interface LeaderboardEntry {
   rank: number;
   team_name: string;
@@ -46,7 +48,7 @@ const AdminLeaderboard = () => {
 
   const loadLeaderboard = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/admin/leaderboard', {
+      const res = await fetch(`${API_URL}/admin/leaderboard`, {
         headers: { 'Authorization': `Bearer ${adminToken}` }
       });
 
