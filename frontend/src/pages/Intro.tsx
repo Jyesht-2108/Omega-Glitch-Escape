@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Intro = () => {
@@ -6,6 +6,275 @@ const Intro = () => {
   const [currentLine, setCurrentLine] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const ambientNodesRef = useRef<OscillatorNode[]>([]);
+
+  // Initialize audio and start ambient drone
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
+        }
+        console.log('Audio context initialized');
+        
+        // Start ambient drone
+        startAmbientDrone();
+      } catch (e) {
+        console.error('Error initializing audio:', e);
+      }
+    };
+
+    initAudio();
+
+    return () => {
+      stopAmbientDrone();
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  // Start dramatic pulsing ambient drone
+  const startAmbientDrone = () => {
+    if (!audioContextRef.current || audioContextRef.current.state !== 'running') return;
+    
+    const ctx = audioContextRef.current;
+    
+    // Deep pulsing bass
+    const bass = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    const bassLFO = ctx.createOscillator(); // LFO for pulsing
+    const bassLFOGain = ctx.createGain();
+    
+    bass.connect(bassGain);
+    bassGain.connect(ctx.destination);
+    bassLFO.connect(bassLFOGain);
+    bassLFOGain.connect(bassGain.gain);
+    
+    bass.frequency.value = 55;
+    bass.type = 'sine';
+    bassGain.gain.value = 0.05;
+    
+    // Pulse at 0.5Hz (slow dramatic pulse)
+    bassLFO.frequency.value = 0.5;
+    bassLFO.type = 'sine';
+    bassLFOGain.gain.value = 0.03;
+    
+    bass.start();
+    bassLFO.start();
+    ambientNodesRef.current.push(bass, bassLFO);
+    
+    // Rising tension drone
+    const tension = ctx.createOscillator();
+    const tensionGain = ctx.createGain();
+    tension.connect(tensionGain);
+    tensionGain.connect(ctx.destination);
+    tension.frequency.value = 220;
+    tension.type = 'sawtooth';
+    tensionGain.gain.value = 0.015;
+    
+    // Slowly rise in pitch for building tension
+    tension.frequency.setValueAtTime(220, ctx.currentTime);
+    tension.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 20);
+    
+    tension.start();
+    ambientNodesRef.current.push(tension);
+    
+    // Dramatic low rumble with noise
+    const rumble = ctx.createOscillator();
+    const rumbleGain = ctx.createGain();
+    const rumbleFilter = ctx.createBiquadFilter();
+    
+    rumble.connect(rumbleFilter);
+    rumbleFilter.connect(rumbleGain);
+    rumbleGain.connect(ctx.destination);
+    
+    rumble.frequency.value = 30;
+    rumble.type = 'sawtooth';
+    rumbleFilter.type = 'lowpass';
+    rumbleFilter.frequency.value = 100;
+    rumbleGain.gain.value = 0.04;
+    
+    rumble.start();
+    ambientNodesRef.current.push(rumble);
+  };
+
+  const stopAmbientDrone = () => {
+    ambientNodesRef.current.forEach(node => {
+      try {
+        node.stop();
+      } catch (e) {
+        // Already stopped
+      }
+    });
+    ambientNodesRef.current = [];
+  };
+
+  // Mute/unmute ambient
+  useEffect(() => {
+    if (audioMuted) {
+      stopAmbientDrone();
+    } else if (audioContextRef.current && audioContextRef.current.state === 'running') {
+      startAmbientDrone();
+    }
+  }, [audioMuted]);
+
+  // Toggle mute on click
+  const toggleMute = () => {
+    setAudioMuted(!audioMuted);
+  };
+
+  // Remove typing sound - just ambient drone now
+  const playTypingSound = () => {
+    // No sound per character - just ambient drone
+  };
+
+  // Ultron-style robotic threat sound
+  const playRoboticThreat = () => {
+    if (!audioContextRef.current || audioContextRef.current.state !== 'running') {
+      return;
+    }
+    
+    try {
+      const ctx = audioContextRef.current;
+      const now = ctx.currentTime;
+
+      // Deep robotic growl
+      const growl = ctx.createOscillator();
+      const growlGain = ctx.createGain();
+      const growlFilter = ctx.createBiquadFilter();
+      
+      growl.connect(growlFilter);
+      growlFilter.connect(growlGain);
+      growlGain.connect(ctx.destination);
+      
+      growl.type = 'sawtooth';
+      growl.frequency.setValueAtTime(60, now);
+      growl.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      
+      growlFilter.type = 'lowpass';
+      growlFilter.frequency.value = 200;
+      growlFilter.Q.value = 5;
+      
+      growlGain.gain.setValueAtTime(0, now);
+      growlGain.gain.linearRampToValueAtTime(0.15, now + 0.05);
+      growlGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+      
+      growl.start(now);
+      growl.stop(now + 1.5);
+
+      // Metallic clang/impact
+      const clang = ctx.createOscillator();
+      const clangGain = ctx.createGain();
+      const clangFilter = ctx.createBiquadFilter();
+      
+      clang.connect(clangFilter);
+      clangFilter.connect(clangGain);
+      clangGain.connect(ctx.destination);
+      
+      clang.type = 'square';
+      clang.frequency.setValueAtTime(800, now);
+      clang.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+      
+      clangFilter.type = 'bandpass';
+      clangFilter.frequency.value = 1500;
+      clangFilter.Q.value = 10;
+      
+      clangGain.gain.setValueAtTime(0.08, now);
+      clangGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      
+      clang.start(now);
+      clang.stop(now + 0.5);
+
+      // Digital glitch/warning
+      const glitch = ctx.createOscillator();
+      const glitchGain = ctx.createGain();
+      
+      glitch.connect(glitchGain);
+      glitchGain.connect(ctx.destination);
+      
+      glitch.type = 'square';
+      glitch.frequency.setValueAtTime(1200, now + 0.2);
+      glitch.frequency.setValueAtTime(1000, now + 0.25);
+      glitch.frequency.setValueAtTime(1400, now + 0.3);
+      glitch.frequency.setValueAtTime(900, now + 0.35);
+      
+      glitchGain.gain.setValueAtTime(0, now + 0.2);
+      glitchGain.gain.linearRampToValueAtTime(0.04, now + 0.21);
+      glitchGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      
+      glitch.start(now + 0.2);
+      glitch.stop(now + 0.6);
+
+      // Robotic voice-like modulation
+      const voice = ctx.createOscillator();
+      const voiceGain = ctx.createGain();
+      const voiceFilter = ctx.createBiquadFilter();
+      const voiceLFO = ctx.createOscillator();
+      const voiceLFOGain = ctx.createGain();
+      
+      voice.connect(voiceFilter);
+      voiceFilter.connect(voiceGain);
+      voiceGain.connect(ctx.destination);
+      
+      voiceLFO.connect(voiceLFOGain);
+      voiceLFOGain.connect(voice.frequency);
+      
+      voice.type = 'sawtooth';
+      voice.frequency.value = 150;
+      
+      voiceFilter.type = 'bandpass';
+      voiceFilter.frequency.value = 400;
+      voiceFilter.Q.value = 8;
+      
+      voiceLFO.type = 'square';
+      voiceLFO.frequency.value = 8;
+      voiceLFOGain.gain.value = 30;
+      
+      voiceGain.gain.setValueAtTime(0, now + 0.4);
+      voiceGain.gain.linearRampToValueAtTime(0.06, now + 0.45);
+      voiceGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+      
+      voice.start(now + 0.4);
+      voiceLFO.start(now + 0.4);
+      voice.stop(now + 1.2);
+      voiceLFO.stop(now + 1.2);
+      
+      console.log('Playing robotic threat sound');
+    } catch (e) {
+      console.error('Error playing robotic threat:', e);
+    }
+  };
+
+  // Success chime
+  const playSuccessChime = () => {
+    if (!audioContextRef.current || audioContextRef.current.state !== 'running') {
+      return;
+    }
+    
+    try {
+      const ctx = audioContextRef.current;
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.5);
+      
+      console.log('Playing success chime');
+    } catch (e) {
+      console.error('Error playing success chime:', e);
+    }
+  };
 
   // Redirect if game has already started (timer is running or player is past level 1)
   useEffect(() => {
@@ -45,6 +314,7 @@ const Intro = () => {
 
   useEffect(() => {
     if (currentLine >= introLines.length) {
+      playSuccessChime();
       setTimeout(() => setIsComplete(true), 1000);
       return;
     }
@@ -52,9 +322,18 @@ const Intro = () => {
     const line = introLines[currentLine];
     let charIndex = 0;
 
+    // Play robotic threat sound for warning lines
+    if (line.includes('[WARNING]') || line.includes('CRITICAL')) {
+      playRoboticThreat();
+    }
+
     const typeInterval = setInterval(() => {
       if (charIndex <= line.length) {
         setDisplayedText(line.substring(0, charIndex));
+        // Play typing sound for each character (except spaces and empty lines)
+        if (charIndex < line.length && line[charIndex] !== ' ' && line.trim() !== '') {
+          playTypingSound();
+        }
         charIndex++;
       } else {
         clearInterval(typeInterval);
@@ -63,7 +342,7 @@ const Intro = () => {
           setDisplayedText('');
         }, 300);
       }
-    }, 30);
+    }, 30); // Back to original speed
 
     return () => clearInterval(typeInterval);
   }, [currentLine]);
@@ -98,7 +377,22 @@ const Intro = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+    <div 
+      onClick={toggleMute}
+      className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden cursor-pointer"
+    >
+      {/* Mute indicator */}
+      {audioMuted && (
+        <div className="absolute top-4 right-4 z-50 text-green-500/50 font-mono text-xs flex items-center gap-2">
+          <span>🔇 MUTED</span>
+        </div>
+      )}
+      {!audioMuted && (
+        <div className="absolute top-4 right-4 z-50 text-green-500/30 font-mono text-xs flex items-center gap-2 animate-pulse">
+          <span>🔊 AUDIO ON</span>
+        </div>
+      )}
+
       {/* Animated scanlines */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 opacity-5" style={{

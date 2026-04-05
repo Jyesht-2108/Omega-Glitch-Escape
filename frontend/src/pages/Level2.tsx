@@ -71,7 +71,7 @@ const generateAPIResponse = (apiKey: string) => {
         blocked_ips: 1543,
         admin_access: {
           enabled: true,
-          password: 'N0D3',
+          pass: 'N0D3',
           level: 5,
           permissions: ['read', 'write', 'execute', 'admin'],
           last_login: '2026-04-02T15:22:10Z',
