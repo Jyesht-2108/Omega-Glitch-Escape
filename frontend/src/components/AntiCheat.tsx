@@ -9,7 +9,7 @@ const ANTI_CHEAT_ENABLED = import.meta.env.VITE_ANTI_CHEAT_ENABLED === 'true';
 const MAX_STRIKES = parseInt(import.meta.env.VITE_ANTI_CHEAT_MAX_STRIKES || '3');
 
 const AntiCheat = () => {
-  const { isLoggedIn, currentLevel, teamId, stopTimer, logout } = useGame();
+  const { isLoggedIn, currentLevel, teamId, stopTimer, logout, gameCompleted } = useGame();
   
   // Track last visibility change time to detect quick hide/show (navigation)
   const lastVisibilityChangeRef = useRef(0);
@@ -250,6 +250,7 @@ const AntiCheat = () => {
     // Only trigger if user is logged in and playing the game
     if (!isLoggedIn || currentLevel < 1) return;
     if (!ANTI_CHEAT_ENABLED) return; // Skip if disabled
+    if (gameCompleted) return; // Skip if game is completed
     
     const now = Date.now();
     
@@ -281,14 +282,14 @@ const AntiCheat = () => {
   useEffect(() => {
     // Only listen for visibility changes (tab switching)
     // Only activate when user is logged in and playing
-    if (!isLoggedIn || currentLevel < 1 || !ANTI_CHEAT_ENABLED) return;
+    if (!isLoggedIn || currentLevel < 1 || !ANTI_CHEAT_ENABLED || gameCompleted) return;
     
     document.addEventListener('visibilitychange', handleVisibility);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [handleVisibility, isLoggedIn, currentLevel]);
+  }, [handleVisibility, isLoggedIn, currentLevel, gameCompleted]);
 
   useEffect(() => {
     // Cleanup function to clear all intervals when component unmounts
